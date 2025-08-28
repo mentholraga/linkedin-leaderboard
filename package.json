@@ -1,0 +1,17 @@
+{
+  "name": "linkedin-leaderboard",
+  "version": "1.0.0",
+  "description": "LinkedIn follower growth leaderboard",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "googleapis": "^128.0.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^2.3.0"
+  }
+}

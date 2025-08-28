@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>LinkedIn Growth Leaderboard</title>
+  <meta name="description" content="Track LinkedIn growth across teams with an interactive leaderboard and trend chart." />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRF6Z8zqL1R7mT9pB4wYk4j0k8tU7q8q0d1Vv7O0bb3xjWmQF0l0YpPZCkq9rYz2N6GZlqZ3U9n0r5xQw5qQw==" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg1: #667eea;
+      --bg2: #764ba2;
+      --white: #fff;
+      --ink: #333;
+      --muted: #6b7280;
+      --brand: #667eea;
+      --good: #10b981;
+      --bad: #ef4444;
+      --card: #ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .header {
+      color: var(--white);
+      padding: 20px;
+      margin-bottom: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+    }
+    .header h1 { font-size: 28px; margin-bottom: 6px; }
+    .header p { opacity: .9; }
+    .last-updated { font-size: 13px; opacity: .85; margin-top: 8px; }
+
+    .controls {
+      display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .control {
+      display: grid; gap: 6px; align-items: center; color: var(--white);
+    }
+    label { font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+    select, button {
+      width: 100%;
+      appearance: none;
+      border: none; border-radius: 999px;
+      padding: 10px 14px; font-weight: 600; font-size: 14px;
+      box-shadow: 0 5px 18px rgba(0,0,0,.2);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    select { background: var(--white); color: var(--ink); }
+    button { background: #ff6b6b; color: #fff; cursor: pointer; }
+    select:hover, button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+    button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .error {
+      display: none; background: var(--bad); color: #fff;
+      padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .loading { color: var(--white); text-align: center; padding: 40px; font-size: 16px; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+      gap: 14px; margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--card); padding: 18px; border-radius: 14px;
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .stat .num { font-size: 24px; font-weight: 800; color: var(--brand); }
+    .stat .lbl { color: var(--muted); font-size: 13px; }
+
+    .panel {
+      background: var(--card); border-radius: 16px; padding: 20px; box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .panel h2 { font-size: 20px; margin-bottom: 14px; }
+
+    .leaderboard-header, .row {
+      display: grid; align-items: center; gap: 16px;
+      grid-template-columns: 56px 1fr 120px 120px 120px;
+      padding: 12px 14px;
+    }
+    .leaderboard-header {
+      color: var(--muted); font-weight: 700; border-bottom: 2px solid #f2f3f9;
+      margin-bottom: 6px;
+    }
+    .row {
+      border-radius: 12px; transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+      border-left: 4px solid transparent; margin-bottom: 8px;
+    }
+    .row:hover { background: #f7f8ff; transform: translateX(4px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .row.rank-1 { background: linear-gradient(45deg,#ffd700,#ffec80); border-left-color:#ffd700; }
+    .row.rank-2 { background: linear-gradient(45deg,#c0c0c0,#e2e8f0); border-left-color:#c0c0c0; }
+    .row.rank-3 { background: linear-gradient(45deg,#cd7f32,#d9a15b); border-left-color:#cd7f32; }
+
+    .rank {
+      width: 40px; height: 40px; border-radius: 999px; background: #eef2ff;
+      color: var(--brand); display:flex; align-items:center; justify-content:center;
+      font-weight: 800; font-size: 18px;
+    }
+    .row.rank-1 .rank, .row.rank-2 .rank, .row.rank-3 .rank { color: #fff; background: rgba(0,0,0,.15); }
+
+    .name a, .name div { font-weight: 700; color: #222; text-decoration: none; }
+    .name a:hover { color: var(--brand); text-decoration: underline; }
+    .subtle { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    .metric { text-align: center; font-weight: 800; }
+    .pos { color: var(--good); }
+    .neg { color: var(--bad); }
+    .neu { color: #6b7280; }
+
+    .no-data { color:#6b7280; font-style: italic; text-align:center; padding: 28px; }
+
+    @media (max-width: 760px) {
+      .leaderboard-header, .row { grid-template-columns: 50px 1fr 110px; }
+      .leaderboard-header > :nth-child(n+4), .row > :nth-child(n+4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🚀 LinkedIn Growth Leaderboard</h1>
+      <p>Track follower growth, compare teams, and spot top performers.</p>
+      <div class="last-updated" id="lastUpdated"></div>
+    </header>
+
+    <div id="error" class="error"></div>
+
+    <section class="controls">
+      <div class="control">
+        <label for="metric">Ranking by</label>
+        <select id="metric">
+          <option value="growthRate">Growth Rate %</option>
+          <option value="absoluteGrowth">Absolute Growth</option>
+          <option value="currentFollowers">Current Followers</option>
+          <option value="consistencyScore">Consistency Score</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="team">Business Line</label>
+        <select id="team">
+          <option value="all">All Teams</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <button id="refresh">🔄 Refresh Data</button>
+      </div>
+    </section>
+
+    <div id="loading" class="loading">Loading leaderboard data…</div>
+
+    <main id="main" style="display:none">
+      <section class="stats">
+        <article class="stat">
+          <div class="num" id="statTotal">-</div>
+          <div class="lbl">Active Employees</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statAvgGrowth">-</div>
+          <div class="lbl">Avg Growth Rate</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statTopGrower">-</div>
+          <div class="lbl">Top Grower</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statTotalFollowers">-</div>
+          <div class="lbl">Total Network</div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2 id="boardTitle">Growth Rate % Leaderboard</h2>
+        <div class="leaderboard-header">
+          <div>Rank</div>
+          <div>Employee</div>
+          <div id="metricHeader">Growth Rate</div>
+          <div>Current</div>
+          <div>Change</div>
+        </div>
+        <div id="board"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Top 10 Growth Trends</h2>
+        <canvas id="chart" width="400" height="220" aria-label="Top 10 growth trend lines" role="img"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = '/api'; // If hosted elsewhere, set full origin
+    let EMPLOYEES = [];
+    let SUMMARY = {};
+    let chart;
+
+    // ---------- Utilities ----------
+    const fmtPct = (n) => `${Number(n || 0).toFixed(1)}%`;
+    const fmtInt = (n) => Number(n || 0).toLocaleString();
+    const safeStr = (s) => (s == null ? '' : String(s));
+    const by = (k) => (a, b) => (b?.[k] ?? 0) - (a?.[k] ?? 0);
+
+    function setLoading(on) {
+      document.getElementById('loading').style.display = on ? 'block' : 'none';
+      document.getElementById('main').style.display = on ? 'none' : 'block';
+      document.getElementById('refresh').disabled = on;
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+    function hideError() {
+      document.getElementById('error').style.display = 'none';
+    }
+
+    // ---------- Data fetch + normalization ----------
+    async function fetchData() {
+      setLoading(true);
+      hideError();
+      try {
+        const res = await fetch(`${API_BASE}/employees`, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
+        const data = await res.json();
+
+        // Baseline
+        EMPLOYEES = Array.isArray(data.employees) ? data.employees : [];
+        SUMMARY = data.summary || {};
+
+        // Normalize fields to camelCase + guard shapes
+        EMPLOYEES = EMPLOYEES.map(e => {
+          // identity
+          const firstName = e.firstName ?? e.first_name ?? '';
+          const lastName = e.lastName ?? e.last_name ?? '';
+          const businessLine = e.businessLine ?? e.business_line ?? 'Unassigned';
+          const linkedinProfile = e.linkedinProfile ?? e.linkedin_profile ?? '';
+
+          // followers timeseries (object of date -> number)
+          const followers = (e.followers && typeof e.followers === 'object') ? e.followers : {};
+
+          // metrics
+          const rawMetrics = e.metrics && typeof e.metrics === 'object' ? e.metrics : {};
+          const metrics = {
+            growthRate: Number(rawMetrics.growthRate ?? 0),
+            absoluteGrowth: Number(rawMetrics.absoluteGrowth ?? 0),
+            currentFollowers: Number(rawMetrics.currentFollowers ?? 0),
+            consistencyScore: Number(rawMetrics.consistencyScore ?? 0)
+          };
+
+          return { firstName, lastName, businessLine, linkedinProfile, followers, metrics };
+        });
+
+        renderAll();
+      } catch (err) {
+        console.error(err);
+        showError(`Failed to load data: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // ---------- Rendering ----------
+    function renderAll() {
+      populateTeamFilter();
+      renderStats();
+      renderBoard();
+      renderChart();
+      renderLastUpdated();
+    }
+
+    function renderLastUpdated() {
+      const el = document.getElementById('lastUpdated');
+      const ts = SUMMARY.lastUpdated ? new Date(SUMMARY.lastUpdated) : null;
+      el.textContent = ts ? `Last updated: ${ts.toLocaleString()}` : '';
+    }
+
+    function renderStats() {
+      document.getElementById('statTotal').textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
+      document.getElementById('statAvgGrowth').textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
+      document.getElementById('statTopGrower').textContent = safeStr(SUMMARY.topGrower || '—');
+      document.getElementById('statTotalFollowers').textContent = fmtInt(SUMMARY.totalFollowers || 0);
+    }
+
+    function populateTeamFilter() {
+      const sel = document.getElementById('team');
+      // preserve the first "All Teams" option; clear the rest
+      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
+
+      const lines = [...new Set(EMPLOYEES.map(e => e.businessLine).filter(Boolean))].sort();
+      lines.forEach(line => {
+        const opt = document.createElement('option');
+        opt.value = line.toLowerCase();
+        opt.textContent = line;
+        sel.appendChild(opt);
+      });
+    }
+
+    function getFilteredEmployees() {
+      const teamVal = document.getElementById('team').value;
+      const list = (teamVal === 'all')
+        ? EMPLOYEES
+        : EMPLOYEES.filter(e => (e.businessLine || '').toLowerCase().includes(teamVal));
+      return [...list]; // copy for safe sorting
+    }
+
+    function renderBoard() {
+      const metric = document.getElementById('metric').value;
+      const board = document.getElementById('board');
+      const headerMap = {
+        growthRate: { title: 'Growth Rate % Leaderboard', header: 'Growth Rate' },
+        absoluteGrowth: { title: 'Absolute Growth Leaderboard', header: 'Growth' },
+        currentFollowers: { title: 'Current Followers Leaderboard', header: 'Followers' },
+        consistencyScore: { title: 'Consistency Score Leaderboard', header: 'Consistency' }
+      };
+      document.getElementById('boardTitle').textContent = headerMap[metric].title;
+      document.getElementById('metricHeader').textContent = headerMap[metric].header;
+
+      const rows = getFilteredEmployees()
+        .sort((a, b) => (b.metrics?.[metric] ?? 0) - (a.metrics?.[metric] ?? 0));
+
+      if (!rows.length) {
+        board.innerHTML = '<div class="no-data">No data available for selected filters.</div>';
+        return;
+      }
+
+      const html = rows.map((e, i) => {
+        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        const val = Number(e.metrics?.[metric] ?? 0);
+        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
+        let display = val;
+        if (metric === 'growthRate' || metric === 'consistencyScore') display = `${val.toFixed(1)}%`;
+        if (metric === 'currentFollowers' || metric === 'absoluteGrowth') display = fmtInt(val);
+
+        const current = fmtInt(Number(e.metrics?.currentFollowers ?? 0));
+        const change = Number(e.metrics?.absoluteGrowth ?? 0);
+        const changeCls = change >= 0 ? 'pos' : 'neg';
+        const changeStr = `${change >= 0 ? '+' : ''}${fmtInt(change)}`;
+
+        const nameHtml = e.linkedinProfile
+          ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
+          : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
+
+        return `
+          <div class="row${rankClass}">
+            <div class="rank">${i + 1}</div>
+            <div class="name">
+              ${nameHtml}
+              <div class="subtle">${safeStr(e.businessLine || 'Unassigned')}</div>
+            </div>
+            <div class="metric ${valCls}">${display}</div>
+            <div class="metric">${current}</div>
+            <div class="metric ${changeCls}">${changeStr}</div>
+          </div>
+        `;
+      }).join('');
+
+      board.innerHTML = html;
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+
+      // Build top 10 by growthRate
+      const top10 = getFilteredEmployees()
+        .filter(e => typeof e.metrics?.growthRate === 'number')
+        .sort((a, b) => b.metrics.growthRate - a.metrics.growthRate)
+        .slice(0, 10);
+
+      // If missing followers time series, bail gracefully
+      const allDates = new Set();
+      top10.forEach(e => Object.keys(e.followers || {}).forEach(d => allDates.add(d)));
+      const labels = Array.from(allDates).sort();
+
+      const datasets = top10.map(e => ({
+        label: `${safeStr(e.firstName)} ${safeStr(e.lastName)}`.trim(),
+        data: labels.map(d => Number(e.followers?.[d] ?? null)),
+        spanGaps: true, // draw across nulls
+        tension: 0.3
+        // no explicit colors: let Chart.js choose
+      }));
+
+      if (chart) chart.destroy();
+      if (!labels.length || !datasets.length) return;
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels.map(d => {
+          const dt = new Date(d);
+          return isNaN(dt) ? d : dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }), datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: 'LinkedIn Follower Growth Trends' },
+            legend: { display: true, position: 'bottom' }
+          },
+          scales: {
+            y: { beginAtZero: false, title: { display: true, text: 'Followers' } },
+            x: { title: { display: true, text: 'Date' } }
+          }
+        }
+      });
+    }
+
+    // ---------- Events ----------
+    document.getElementById('metric').addEventListener('change', () => {
+      renderBoard(); renderChart();
+    });
+    document.getElementById('team').addEventListener('change', () => {
+      renderBoard(); renderChart();
+    });
+    document.getElementById('refresh').addEventListener('click', fetchData);
+
+    // ---------- Init ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+      // optional auto-refresh
+      setInterval(fetchData, 5 * 60 * 1000);
+    });
+  </script>
+</body>
+</html>
