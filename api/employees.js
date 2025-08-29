@@ -172,9 +172,16 @@ function computeMonthlyMetrics(followers) {
   const dates = Object.keys(followers).sort();
   const monthlyMetrics = [];
   
-  for (let i = 1; i < dates.length; i++) {
-    const currentPeriod = dates[i];
-    const previousPeriod = dates[i-1];
+  // Find end-of-month dates only (days 28-31)
+  const endOfMonthDates = dates.filter(date => {
+    const day = new Date(date).getDate();
+    return day >= 28;
+  });
+  
+  // Calculate completed monthly periods (end-of-month to end-of-month)
+  for (let i = 1; i < endOfMonthDates.length; i++) {
+    const currentPeriod = endOfMonthDates[i];
+    const previousPeriod = endOfMonthDates[i-1];
     const currentValue = followers[currentPeriod];
     const previousValue = followers[previousPeriod];
     
@@ -182,13 +189,48 @@ function computeMonthlyMetrics(followers) {
       const monthlyGrowthRate = previousValue > 0 ? 
         ((currentValue - previousValue) / previousValue) * 100 : 0;
       
+      const monthName = new Date(currentPeriod).toLocaleDateString('en-US', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      
       monthlyMetrics.push({
-        period: getPeriodName(previousPeriod, currentPeriod),
+        period: monthName,
         periodKey: currentPeriod,
         growthRate: +monthlyGrowthRate.toFixed(1),
         absoluteGrowth: currentValue - previousValue,
         startFollowers: previousValue,
-        endFollowers: currentValue
+        endFollowers: currentValue,
+        isComplete: true
+      });
+    }
+  }
+  
+  // Add current month progress if we have mid-month data
+  const latestDate = dates[dates.length - 1];
+  const latestEndOfMonth = endOfMonthDates[endOfMonthDates.length - 1];
+  
+  if (latestDate !== latestEndOfMonth && latestEndOfMonth) {
+    const currentValue = followers[latestDate];
+    const monthStartValue = followers[latestEndOfMonth];
+    
+    if (currentValue != null && monthStartValue != null) {
+      const progressGrowthRate = monthStartValue > 0 ? 
+        ((currentValue - monthStartValue) / monthStartValue) * 100 : 0;
+      
+      const currentMonth = new Date(latestDate).toLocaleDateString('en-US', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      
+      monthlyMetrics.push({
+        period: `${currentMonth} (In Progress)`,
+        periodKey: latestDate,
+        growthRate: +progressGrowthRate.toFixed(1),
+        absoluteGrowth: currentValue - monthStartValue,
+        startFollowers: monthStartValue,
+        endFollowers: currentValue,
+        isComplete: false
       });
     }
   }
@@ -196,28 +238,17 @@ function computeMonthlyMetrics(followers) {
   return monthlyMetrics;
 }
 
-function getPeriodName(startDate, endDate) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-  
-  if (startMonth === endMonth) {
-    return `${endMonth} ${end.getFullYear()}`;
-  } else {
-    return `${startMonth} - ${endMonth} ${end.getFullYear()}`;
-  }
-}
-
 function calculateMonthlyWinners(employees) {
   const monthlyWinners = [];
   const allPeriods = new Set();
   
-  // Collect all unique periods
+  // Collect only completed monthly periods
   employees.forEach(emp => {
     if (emp.monthlyMetrics) {
       emp.monthlyMetrics.forEach(metric => {
-        allPeriods.add(metric.periodKey);
+        if (metric.isComplete) {
+          allPeriods.add(metric.periodKey);
+        }
       });
     }
   });
@@ -228,8 +259,10 @@ function calculateMonthlyWinners(employees) {
     const periodEmployees = employees
       .map(emp => {
         if (!emp.monthlyMetrics) return null;
-        const periodMetric = emp.monthlyMetrics.find(m => m.periodKey === periodKey);
-        if (!periodMetric || periodMetric.growthRate <= 0) return null;
+        const periodMetric = emp.monthlyMetrics.find(m => 
+          m.periodKey === periodKey && m.isComplete && m.growthRate > 0
+        );
+        if (!periodMetric) return null;
         return {
           ...emp,
           periodMetric: periodMetric
