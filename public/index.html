@@ -195,7 +195,7 @@
 <body>
   <div class="container">
     <header class="header">
-      <h1>🚀 LinkedIn Growth Leaderboard</h1>
+      <h1>LinkedIn Growth Leaderboard</h1>
       <p>Track follower growth, compare teams, and spot top performers.</p>
       <div class="last-updated" id="lastUpdated"></div>
     </header>
@@ -207,7 +207,7 @@
         <label for="metric">Ranking by</label>
         <select id="metric">
           <option value="growthRate">Overall Growth Rate %</option>
-          <option value="monthlyGrowth">This Month's Growth %</option>
+          <option value="monthlyGrowth">Current Month Progress %</option>
           <option value="absoluteGrowth">Absolute Growth</option>
           <option value="currentFollowers">Current Followers</option>
           <option value="consistencyScore">Consistency Score</option>
@@ -221,7 +221,7 @@
       </div>
       <div class="control">
         <label>&nbsp;</label>
-        <button id="refresh">🔄 Refresh Data</button>
+        <button id="refresh">Refresh Data</button>
       </div>
     </section>
 
@@ -249,13 +249,13 @@
 
       <section class="monthly-winner" id="monthlyWinnerSection" style="display:none">
         <div class="period-selector">
-          <label for="periodSelect">Period:</label>
+          <label for="periodSelect">Monthly Winners:</label>
           <select id="periodSelect">
-            <option value="">Select a period...</option>
+            <option value="">Select a month...</option>
           </select>
         </div>
         <div id="monthlyWinnerContent">
-          <h3>Monthly Growth Champion</h3>
+          <h3>Monthly Champion</h3>
           <div class="winner-info">
             <div class="winner-details">
               <div class="winner-name" id="winnerName">—</div>
@@ -392,8 +392,9 @@
 
     function populatePeriodSelector() {
       const select = document.getElementById('periodSelect');
-      select.innerHTML = '<option value="">Select a period...</option>';
+      select.innerHTML = '<option value="">Select a month...</option>';
       
+      // Only show completed monthly winners
       MONTHLY_WINNERS.forEach((winner, index) => {
         const option = document.createElement('option');
         option.value = winner.periodKey;
@@ -437,6 +438,7 @@
       if (!employee.monthlyMetrics || employee.monthlyMetrics.length === 0) {
         return 0;
       }
+      // Get the latest metric (could be in-progress or completed)
       return employee.monthlyMetrics[employee.monthlyMetrics.length - 1].growthRate || 0;
     }
 
@@ -445,7 +447,7 @@
       const board = document.getElementById('board');
       const headerMap = {
         growthRate: { title: 'Overall Growth Rate % Leaderboard', header: 'Growth Rate' },
-        monthlyGrowth: { title: 'This Month\'s Growth Leaderboard', header: 'Monthly Growth' },
+        monthlyGrowth: { title: 'Current Month Progress Leaderboard', header: 'Monthly Progress' },
         absoluteGrowth: { title: 'Absolute Growth Leaderboard', header: 'Growth' },
         currentFollowers: { title: 'Current Followers Leaderboard', header: 'Followers' },
         consistencyScore: { title: 'Consistency Score Leaderboard', header: 'Consistency' }
