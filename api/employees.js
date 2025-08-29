@@ -1,23 +1,4 @@
-// api/employees.js
 const { google } = require('googleapis');
-
-/**
- * ENV required:
- *  - GOOGLE_SHEET_ID
- *  - GOOGLE_SERVICE_ACCOUNT_EMAIL
- *  - GOOGLE_PRIVATE_KEY (with literal \n; replaced below)
- *
- * Sheet assumptions (from your file):
- *  - Tab name: "Employees"
- *  - Identity cols: "First name (legal)", "Last name (legal)", "LinkedIn profile", "Status", "Business Line"
- *  - Many follower snapshot columns with date-like labels, e.g.:
- *      "LinkedIn Following (18th March)"
- *      "4/1/2025 (15TH April)"
- *      "4/30/2025 (30TH April)"
- *      "15th June 2025"
- *      "30th July 2025"
- *      "15th August 2025"
- */
 
 // --------------------------- Utilities ---------------------------
 
@@ -69,13 +50,6 @@ function coerceNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-/**
- * Try hard to extract a usable ISO date (yyyy-mm-dd) from a variety of header formats.
- * Strategy:
- *  1) Prefer an explicit numeric date like "4/30/2025" or "2025-07-15" anywhere in the header.
- *  2) Else parse a textual date like "18th March 2025" or "15th June" (if no year, fall back to defaultYear).
- *  3) Return null if nothing reasonable can be parsed.
- */
 function parseHeaderToISODate(header, defaultYear) {
   if (!header) return null;
   const raw = removeOrdinals(header).replace(/\s+/g, ' ').trim();
@@ -86,7 +60,7 @@ function parseHeaderToISODate(header, defaultYear) {
     const mm = Number(mdy[1]);
     const dd = Number(mdy[2]);
     let yyyy = Number(mdy[3]);
-    if (yyyy < 100) yyyy += 2000; // just in case
+    if (yyyy < 100) yyyy += 2000;
     const d = new Date(Date.UTC(yyyy, mm - 1, dd));
     if (!isNaN(d)) return d.toISOString().slice(0, 10);
   }
@@ -103,18 +77,13 @@ function parseHeaderToISODate(header, defaultYear) {
 
   // 3) textual, like "18 March 2025" or "15 June"
   const lower = raw.toLowerCase();
-
-  // Pull out "(...)" content if present, it's often the real date alias
   const inParens = lower.match(/\(([^)]+)\)/);
   const core = inParens ? inParens[1] : lower;
 
-  // find month name
   const monthIndex = MONTHS.findIndex(m => core.includes(m));
   if (monthIndex >= 0) {
-    // find day number near the month
     const dayMatch = core.match(/\b(\d{1,2})\b/);
     const dd = dayMatch ? Number(dayMatch[1]) : 1;
-    // year?
     const yearMatch = core.match(/\b(20\d{2})\b/);
     const yyyy = yearMatch ? Number(yearMatch[1]) : (defaultYear || new Date().getUTCFullYear());
 
@@ -122,16 +91,12 @@ function parseHeaderToISODate(header, defaultYear) {
     if (!isNaN(d)) return d.toISOString().slice(0, 10);
   }
 
-  // Fallback: try to parse Date() generically (last resort)
   const d = new Date(raw);
   if (!isNaN(d)) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
 
   return null;
 }
 
-/**
- * Determine a default year by scanning headers for any YYYY present; if none, use current year.
- */
 function inferDefaultYear(headers) {
   for (const h of headers) {
     const m = String(h).match(/\b(20\d{2})\b/);
@@ -140,11 +105,6 @@ function inferDefaultYear(headers) {
   return new Date().getUTCFullYear();
 }
 
-/**
- * Given a row object keyed by header strings, build:
- *  - identity fields (firstName, lastName, businessLine, linkedinProfile, status)
- *  - followers { isoDate: number }
- */
 function buildEmployeeFromRow(row, dateCols) {
   const firstName = row['First name (legal)'] ?? row['First Name'] ?? row['First name'] ?? '';
   const lastName = row['Last name (legal)'] ?? row['Last Name'] ?? row['Last name'] ?? '';
@@ -168,14 +128,6 @@ function buildEmployeeFromRow(row, dateCols) {
   };
 }
 
-/**
- * Compute metrics from followers series:
- *  - currentFollowers = latest non-null value
- *  - earliestFollowers = earliest non-null value
- *  - absoluteGrowth = current - earliest
- *  - growthRate% = (absoluteGrowth / earliest) * 100 (0 if earliest <= 0)
- *  - consistencyScore% = % of positive-or-zero deltas across consecutive points
- */
 function computeMetrics(followers) {
   const dates = Object.keys(followers).sort();
   if (dates.length === 0) {
@@ -194,7 +146,6 @@ function computeMetrics(followers) {
     ? +( (absoluteGrowth / earliest) * 100 ).toFixed(1)
     : 0;
 
-  // consistency: fraction of non-negative deltas
   let positives = 0;
   let steps = 0;
   for (let i = 1; i < dates.length; i++) {
@@ -215,12 +166,102 @@ function computeMetrics(followers) {
   };
 }
 
+// --------------------------- Monthly Metrics ---------------------------
+
+function computeMonthlyMetrics(followers) {
+  const dates = Object.keys(followers).sort();
+  const monthlyMetrics = [];
+  
+  for (let i = 1; i < dates.length; i++) {
+    const currentPeriod = dates[i];
+    const previousPeriod = dates[i-1];
+    const currentValue = followers[currentPeriod];
+    const previousValue = followers[previousPeriod];
+    
+    if (currentValue != null && previousValue != null) {
+      const monthlyGrowthRate = previousValue > 0 ? 
+        ((currentValue - previousValue) / previousValue) * 100 : 0;
+      
+      monthlyMetrics.push({
+        period: getPeriodName(previousPeriod, currentPeriod),
+        periodKey: currentPeriod,
+        growthRate: +monthlyGrowthRate.toFixed(1),
+        absoluteGrowth: currentValue - previousValue,
+        startFollowers: previousValue,
+        endFollowers: currentValue
+      });
+    }
+  }
+  
+  return monthlyMetrics;
+}
+
+function getPeriodName(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
+  
+  if (startMonth === endMonth) {
+    return `${endMonth} ${end.getFullYear()}`;
+  } else {
+    return `${startMonth} - ${endMonth} ${end.getFullYear()}`;
+  }
+}
+
+function calculateMonthlyWinners(employees) {
+  const monthlyWinners = [];
+  const allPeriods = new Set();
+  
+  // Collect all unique periods
+  employees.forEach(emp => {
+    if (emp.monthlyMetrics) {
+      emp.monthlyMetrics.forEach(metric => {
+        allPeriods.add(metric.periodKey);
+      });
+    }
+  });
+  
+  const sortedPeriods = Array.from(allPeriods).sort().reverse();
+  
+  sortedPeriods.forEach(periodKey => {
+    const periodEmployees = employees
+      .map(emp => {
+        if (!emp.monthlyMetrics) return null;
+        const periodMetric = emp.monthlyMetrics.find(m => m.periodKey === periodKey);
+        if (!periodMetric || periodMetric.growthRate <= 0) return null;
+        return {
+          ...emp,
+          periodMetric: periodMetric
+        };
+      })
+      .filter(emp => emp !== null)
+      .sort((a, b) => b.periodMetric.growthRate - a.periodMetric.growthRate);
+    
+    if (periodEmployees.length > 0) {
+      const winner = periodEmployees[0];
+      monthlyWinners.push({
+        period: winner.periodMetric.period,
+        periodKey: periodKey,
+        winner: {
+          name: `${winner.firstName || ''} ${winner.lastName || ''}`.trim(),
+          businessLine: winner.businessLine,
+          growthRate: winner.periodMetric.growthRate,
+          absoluteGrowth: winner.periodMetric.absoluteGrowth,
+          linkedinProfile: winner.linkedinProfile
+        }
+      });
+    }
+  });
+  
+  return monthlyWinners;
+}
+
 // --------------------------- Data Access ---------------------------
 
 async function getEmployeesSheet() {
   const sheets = await getSheetsClient();
 
-  // Read the "Employees" tab; fetch a wide range to include all date columns
   const range = 'Employees!A1:ZZ2000';
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -243,7 +284,6 @@ function detectDateColumns(headers) {
   const dateCols = [];
 
   for (const header of headers) {
-    // skip known identity columns
     const h = String(header || '').trim();
     const lower = h.toLowerCase();
 
@@ -260,14 +300,12 @@ function detectDateColumns(headers) {
 
     if (isIdentity) continue;
 
-    // try to parse into a date
     const iso = parseHeaderToISODate(h, defaultYear);
     if (iso) {
       dateCols.push({ header: h, iso });
     }
   }
 
-  // de-duplicate in case multiple headers map to the same date (keep the last)
   const byDate = new Map();
   for (const c of dateCols) byDate.set(c.iso, c);
   return Array.from(byDate.values()).sort((a, b) => a.iso.localeCompare(b.iso));
@@ -285,14 +323,13 @@ function rowsToObjects(headers, rows) {
 
 function buildEmployeesPayload(sheet) {
   const { headers, rows } = sheet;
-  if (!headers.length) return { employees: [], summary: baseSummary() };
+  if (!headers.length) return { employees: [], monthlyWinners: [], summary: baseSummary() };
 
   const dateCols = detectDateColumns(headers);
   const objects = rowsToObjects(headers, rows);
 
   const employees = [];
   for (const row of objects) {
-    // Only include Active (or empty = treat as Active) rows with at least a name
     const status = (row['Status'] ?? '').toString().trim();
     const first = (row['First name (legal)'] ?? row['First name'] ?? '').toString().trim();
     const last = (row['Last name (legal)'] ?? row['Last name'] ?? '').toString().trim();
@@ -301,13 +338,14 @@ function buildEmployeesPayload(sheet) {
 
     const e = buildEmployeeFromRow(row, dateCols);
     e.metrics = computeMetrics(e.followers);
+    e.monthlyMetrics = computeMonthlyMetrics(e.followers);
     employees.push(e);
   }
 
-  // Summary
   const summary = computeSummary(employees);
+  const monthlyWinners = calculateMonthlyWinners(employees);
 
-  return { employees, summary };
+  return { employees, monthlyWinners, summary };
 }
 
 function baseSummary() {
@@ -357,4 +395,4 @@ module.exports = async function handler(req, res) {
       details: error?.message || 'Unknown error'
     });
   }
-}
+};
