@@ -36,13 +36,9 @@ async function getSheetsClient() {
 }
 
 const MONTHS = [
-  'january','february','march','april','may','june',
-  'july','august','september','october','november','december'
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
 ];
-
-function removeOrdinals(str) {
-  return String(str).replace(/\b(\d+)(st|nd|rd|th)\b/gi, '$1');
-}
 
 function coerceNumber(v) {
   if (v === null || typeof v === 'undefined' || v === '') return null;
@@ -50,72 +46,41 @@ function coerceNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-function parseHeaderToISODate(header, defaultYear) {
+function parseHeaderToMonth(header, defaultYear = 2025) {
   if (!header) return null;
-  const raw = removeOrdinals(header).replace(/\s+/g, ' ').trim();
-
-  // 1) mm/dd/yyyy or m/d/yyyy
-  const mdy = raw.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/);
-  if (mdy) {
-    const mm = Number(mdy[1]);
-    const dd = Number(mdy[2]);
-    let yyyy = Number(mdy[3]);
-    if (yyyy < 100) yyyy += 2000;
-    const d = new Date(Date.UTC(yyyy, mm - 1, dd));
-    if (!isNaN(d)) return d.toISOString().slice(0, 10);
-  }
-
-  // 2) yyyy-mm-dd
-  const ymd = raw.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
-  if (ymd) {
-    const yyyy = Number(ymd[1]);
-    const mm = Number(ymd[2]);
-    const dd = Number(ymd[3]);
-    const d = new Date(Date.UTC(yyyy, mm - 1, dd));
-    if (!isNaN(d)) return d.toISOString().slice(0, 10);
-  }
-
-  // 3) textual, like "18 March 2025" or "15 June"
-  const lower = raw.toLowerCase();
-  const inParens = lower.match(/\(([^)]+)\)/);
-  const core = inParens ? inParens[1] : lower;
-
-  const monthIndex = MONTHS.findIndex(m => core.includes(m));
+  const raw = String(header).trim().toLowerCase();
+  
+  // Direct month name matching
+  const monthIndex = MONTHS.findIndex(m => raw === m);
   if (monthIndex >= 0) {
-    const dayMatch = core.match(/\b(\d{1,2})\b/);
-    const dd = dayMatch ? Number(dayMatch[1]) : 1;
-    const yearMatch = core.match(/\b(20\d{2})\b/);
-    const yyyy = yearMatch ? Number(yearMatch[1]) : (defaultYear || new Date().getUTCFullYear());
-
-    const d = new Date(Date.UTC(yyyy, monthIndex, dd));
-    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+    return {
+      month: MONTHS[monthIndex],
+      year: defaultYear,
+      sortKey: `${defaultYear}-${String(monthIndex + 1).padStart(2, '0')}`
+    };
   }
-
-  const d = new Date(raw);
-  if (!isNaN(d)) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
 
   return null;
 }
 
-function inferDefaultYear(headers) {
-  for (const h of headers) {
-    const m = String(h).match(/\b(20\d{2})\b/);
-    if (m) return Number(m[1]);
-  }
-  return new Date().getUTCFullYear();
-}
-
-function buildEmployeeFromRow(row, dateCols) {
+function buildEmployeeFromRow(row, monthCols) {
   const firstName = row['First name (legal)'] ?? row['First Name'] ?? row['First name'] ?? '';
   const lastName = row['Last name (legal)'] ?? row['Last Name'] ?? row['Last name'] ?? '';
   const businessLine = row['Business Line'] ?? row['Business line'] ?? row['Business'] ?? 'Unassigned';
   const status = row['Status'] ?? 'Active';
   const linkedinProfile = row['LinkedIn profile'] ?? row['Linkedin profile'] ?? row['LinkedIn'] ?? '';
 
-  const followers = {};
-  for (const { header, iso } of dateCols) {
+  const monthlyFollowers = {};
+  for (const { header, monthData } of monthCols) {
     const n = coerceNumber(row[header]);
-    if (n !== null) followers[iso] = n;
+    if (n !== null) {
+      monthlyFollowers[monthData.sortKey] = {
+        followers: n,
+        month: monthData.month,
+        year: monthData.year,
+        displayName: `${monthData.month.charAt(0).toUpperCase() + monthData.month.slice(1)} ${monthData.year}`
+      };
+    }
   }
 
   return {
@@ -124,169 +89,105 @@ function buildEmployeeFromRow(row, dateCols) {
     businessLine: String(businessLine || '').trim() || 'Unassigned',
     status: String(status || '').trim(),
     linkedinProfile: String(linkedinProfile || '').trim(),
-    followers
+    monthlyFollowers
   };
 }
 
-function computeMetrics(followers) {
-  const dates = Object.keys(followers).sort();
-  if (dates.length === 0) {
+function computeOverallMetrics(monthlyFollowers) {
+  const sortedKeys = Object.keys(monthlyFollowers).sort();
+  if (sortedKeys.length === 0) {
     return {
       currentFollowers: 0,
       absoluteGrowth: 0,
-      growthRate: 0,
-      consistencyScore: 0
+      growthRate: 0
     };
   }
-  const earliest = followers[dates[0]];
-  const latest = followers[dates[dates.length - 1]];
 
-  const absoluteGrowth = (latest ?? 0) - (earliest ?? 0);
-  const growthRate = (earliest && earliest > 0)
-    ? +( (absoluteGrowth / earliest) * 100 ).toFixed(1)
-    : 0;
+  const earliest = monthlyFollowers[sortedKeys[0]];
+  const latest = monthlyFollowers[sortedKeys[sortedKeys.length - 1]];
 
-  let positives = 0;
-  let steps = 0;
-  for (let i = 1; i < dates.length; i++) {
-    const prev = followers[dates[i - 1]];
-    const curr = followers[dates[i]];
-    if (prev != null && curr != null) {
-      steps += 1;
-      if (curr - prev >= 0) positives += 1;
-    }
-  }
-  const consistencyScore = steps > 0 ? Math.round((positives / steps) * 100) : 0;
+  const absoluteGrowth = latest.followers - earliest.followers;
+  const growthRate = earliest.followers > 0 ? ((absoluteGrowth / earliest.followers) * 100) : 0;
 
   return {
-    currentFollowers: Number(latest ?? 0),
-    absoluteGrowth: Number(absoluteGrowth),
-    growthRate: Number(growthRate),
-    consistencyScore: Number(consistencyScore)
+    currentFollowers: latest.followers,
+    absoluteGrowth: absoluteGrowth,
+    growthRate: +growthRate.toFixed(1)
   };
 }
 
-// --------------------------- Monthly Metrics ---------------------------
-
-function computeMonthlyMetrics(followers) {
-  const dates = Object.keys(followers).sort();
+function computeMonthlyMetrics(monthlyFollowers) {
+  const sortedKeys = Object.keys(monthlyFollowers).sort();
   const monthlyMetrics = [];
-  
-  // Find end-of-month dates only (days 28-31)
-  const endOfMonthDates = dates.filter(date => {
-    const day = new Date(date).getDate();
-    return day >= 28;
-  });
-  
-  // Calculate completed monthly periods (end-of-month to end-of-month)
-  for (let i = 1; i < endOfMonthDates.length; i++) {
-    const currentPeriod = endOfMonthDates[i];
-    const previousPeriod = endOfMonthDates[i-1];
-    const currentValue = followers[currentPeriod];
-    const previousValue = followers[previousPeriod];
-    
-    if (currentValue != null && previousValue != null) {
-      const monthlyGrowthRate = previousValue > 0 ? 
-        ((currentValue - previousValue) / previousValue) * 100 : 0;
-      
-      const monthName = new Date(currentPeriod).toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
-      
-      monthlyMetrics.push({
-        period: monthName,
-        periodKey: currentPeriod,
-        growthRate: +monthlyGrowthRate.toFixed(1),
-        absoluteGrowth: currentValue - previousValue,
-        startFollowers: previousValue,
-        endFollowers: currentValue,
-        isComplete: true
-      });
-    }
+
+  for (let i = 1; i < sortedKeys.length; i++) {
+    const currentKey = sortedKeys[i];
+    const previousKey = sortedKeys[i - 1];
+    const current = monthlyFollowers[currentKey];
+    const previous = monthlyFollowers[previousKey];
+
+    const monthlyGrowth = current.followers - previous.followers;
+    const monthlyGrowthRate = previous.followers > 0 ? 
+      ((monthlyGrowth / previous.followers) * 100) : 0;
+
+    monthlyMetrics.push({
+      month: current.displayName,
+      monthKey: currentKey,
+      currentFollowers: current.followers,
+      monthlyGrowth: monthlyGrowth,
+      monthlyGrowthRate: +monthlyGrowthRate.toFixed(1)
+    });
   }
-  
-  // Add current month progress if we have mid-month data
-  const latestDate = dates[dates.length - 1];
-  const latestEndOfMonth = endOfMonthDates[endOfMonthDates.length - 1];
-  
-  if (latestDate !== latestEndOfMonth && latestEndOfMonth) {
-    const currentValue = followers[latestDate];
-    const monthStartValue = followers[latestEndOfMonth];
-    
-    if (currentValue != null && monthStartValue != null) {
-      const progressGrowthRate = monthStartValue > 0 ? 
-        ((currentValue - monthStartValue) / monthStartValue) * 100 : 0;
-      
-      const currentMonth = new Date(latestDate).toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
-      
-      monthlyMetrics.push({
-        period: `${currentMonth} (In Progress)`,
-        periodKey: latestDate,
-        growthRate: +progressGrowthRate.toFixed(1),
-        absoluteGrowth: currentValue - monthStartValue,
-        startFollowers: monthStartValue,
-        endFollowers: currentValue,
-        isComplete: false
-      });
-    }
-  }
-  
+
   return monthlyMetrics;
 }
 
 function calculateMonthlyWinners(employees) {
   const monthlyWinners = [];
-  const allPeriods = new Set();
-  
-  // Collect only completed monthly periods
+  const allMonths = new Set();
+
+  // Collect all months that have data
   employees.forEach(emp => {
     if (emp.monthlyMetrics) {
       emp.monthlyMetrics.forEach(metric => {
-        if (metric.isComplete) {
-          allPeriods.add(metric.periodKey);
-        }
+        allMonths.add(metric.monthKey);
       });
     }
   });
-  
-  const sortedPeriods = Array.from(allPeriods).sort().reverse();
-  
-  sortedPeriods.forEach(periodKey => {
-    const periodEmployees = employees
+
+  const sortedMonths = Array.from(allMonths).sort().reverse();
+
+  sortedMonths.forEach(monthKey => {
+    const monthEmployees = employees
       .map(emp => {
         if (!emp.monthlyMetrics) return null;
-        const periodMetric = emp.monthlyMetrics.find(m => 
-          m.periodKey === periodKey && m.isComplete && m.growthRate > 0
-        );
-        if (!periodMetric) return null;
+        const monthMetric = emp.monthlyMetrics.find(m => m.monthKey === monthKey);
+        if (!monthMetric || monthMetric.monthlyGrowth <= 0) return null;
         return {
           ...emp,
-          periodMetric: periodMetric
+          monthMetric: monthMetric
         };
       })
       .filter(emp => emp !== null)
-      .sort((a, b) => b.periodMetric.growthRate - a.periodMetric.growthRate);
-    
-    if (periodEmployees.length > 0) {
-      const winner = periodEmployees[0];
+      .sort((a, b) => b.monthMetric.monthlyGrowth - a.monthMetric.monthlyGrowth);
+
+    if (monthEmployees.length > 0) {
+      const winner = monthEmployees[0];
       monthlyWinners.push({
-        period: winner.periodMetric.period,
-        periodKey: periodKey,
+        month: winner.monthMetric.month,
+        monthKey: monthKey,
         winner: {
           name: `${winner.firstName || ''} ${winner.lastName || ''}`.trim(),
           businessLine: winner.businessLine,
-          growthRate: winner.periodMetric.growthRate,
-          absoluteGrowth: winner.periodMetric.absoluteGrowth,
+          currentFollowers: winner.monthMetric.currentFollowers,
+          monthlyGrowth: winner.monthMetric.monthlyGrowth,
+          monthlyGrowthRate: winner.monthMetric.monthlyGrowthRate,
           linkedinProfile: winner.linkedinProfile
         }
       });
     }
   });
-  
+
   return monthlyWinners;
 }
 
@@ -294,7 +195,6 @@ function calculateMonthlyWinners(employees) {
 
 async function getEmployeesSheet() {
   const sheets = await getSheetsClient();
-
   const range = 'Employees!A1:ZZ2000';
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -312,14 +212,14 @@ async function getEmployeesSheet() {
 
 // --------------------------- Transformation ---------------------------
 
-function detectDateColumns(headers) {
-  const defaultYear = inferDefaultYear(headers);
-  const dateCols = [];
+function detectMonthColumns(headers) {
+  const monthCols = [];
 
   for (const header of headers) {
     const h = String(header || '').trim();
     const lower = h.toLowerCase();
 
+    // Skip identity columns
     const isIdentity =
       lower === 'first name (legal)' ||
       lower === 'last name (legal)' ||
@@ -333,15 +233,13 @@ function detectDateColumns(headers) {
 
     if (isIdentity) continue;
 
-    const iso = parseHeaderToISODate(h, defaultYear);
-    if (iso) {
-      dateCols.push({ header: h, iso });
+    const monthData = parseHeaderToMonth(h);
+    if (monthData) {
+      monthCols.push({ header: h, monthData });
     }
   }
 
-  const byDate = new Map();
-  for (const c of dateCols) byDate.set(c.iso, c);
-  return Array.from(byDate.values()).sort((a, b) => a.iso.localeCompare(b.iso));
+  return monthCols.sort((a, b) => a.monthData.sortKey.localeCompare(b.monthData.sortKey));
 }
 
 function rowsToObjects(headers, rows) {
@@ -358,7 +256,7 @@ function buildEmployeesPayload(sheet) {
   const { headers, rows } = sheet;
   if (!headers.length) return { employees: [], monthlyWinners: [], summary: baseSummary() };
 
-  const dateCols = detectDateColumns(headers);
+  const monthCols = detectMonthColumns(headers);
   const objects = rowsToObjects(headers, rows);
 
   const employees = [];
@@ -369,9 +267,13 @@ function buildEmployeesPayload(sheet) {
     if (!first && !last) continue;
     if (status && status.toLowerCase() !== 'active') continue;
 
-    const e = buildEmployeeFromRow(row, dateCols);
-    e.metrics = computeMetrics(e.followers);
-    e.monthlyMetrics = computeMonthlyMetrics(e.followers);
+    const e = buildEmployeeFromRow(row, monthCols);
+    
+    // Skip employees with no month data
+    if (Object.keys(e.monthlyFollowers).length === 0) continue;
+    
+    e.metrics = computeOverallMetrics(e.monthlyFollowers);
+    e.monthlyMetrics = computeMonthlyMetrics(e.monthlyFollowers);
     employees.push(e);
   }
 
