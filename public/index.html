@@ -395,18 +395,32 @@
       width: 40px; 
       height: 40px; 
       border-radius: 50%; 
-      background: var(--primary-light);
-      color: var(--primary); 
+      background: var(--surface-accent);
+      color: var(--text-secondary); 
       display: flex; 
       align-items: center; 
       justify-content: center;
       font-weight: 800; 
       font-size: 18px;
+      border: var(--border);
     }
 
-    .row.rank-1 .rank, .row.rank-2 .rank, .row.rank-3 .rank { 
+    .row.rank-1 .rank { 
       color: var(--text-inverse); 
-      background: rgba(0, 0, 0, 0.2); 
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .row.rank-2 .rank { 
+      color: var(--text-inverse); 
+      background: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+    .row.rank-3 .rank { 
+      color: var(--text-inverse); 
+      background: var(--tertiary);
+      border-color: var(--tertiary);
     }
 
     .name a, .name div { 
@@ -425,6 +439,36 @@
       font-size: 13px; 
       margin-top: 2px; 
       font-weight: 500;
+    }
+
+    .metric { 
+      text-align: center; 
+      font-weight: 800; 
+    }
+
+    .pos { color: var(--success); }
+    .neg { color: var(--danger); }
+    .neu { color: var(--text-muted); }
+
+    .no-data { 
+      color: var(--text-muted); 
+      font-style: italic; 
+      text-align: center; 
+      padding: 40px; 
+      font-size: 16px;
+    }
+
+    /* Badge styles for business lines */
+    .business-line-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--text-primary);
+      border: 1px solid rgba(34, 218, 174, 0.2);
+    } 500;
     }
 
     .metric { 
