@@ -12,39 +12,43 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      /* Company brand colors */
+      /* Clean color scheme */
       --primary: #22daae;
       --secondary: #ff4dd8;
-      --dark: #09100f;
-      --light: #f9f8f5;
+      --tertiary: #ffa901;
       
       /* Derived colors */
       --primary-light: rgba(34, 218, 174, 0.1);
       --primary-soft: rgba(34, 218, 174, 0.8);
       --secondary-light: rgba(255, 77, 216, 0.1);
       --secondary-soft: rgba(255, 77, 216, 0.8);
+      --tertiary-light: rgba(255, 169, 1, 0.1);
+      --tertiary-soft: rgba(255, 169, 1, 0.8);
       
       /* Text colors */
-      --text-primary: var(--dark);
-      --text-secondary: rgba(9, 16, 15, 0.7);
-      --text-muted: rgba(9, 16, 15, 0.5);
-      --text-inverse: var(--light);
+      --text-primary: #000000;
+      --text-secondary: rgba(0, 0, 0, 0.7);
+      --text-muted: rgba(0, 0, 0, 0.5);
+      --text-inverse: #ffffff;
       
       /* Background and surface colors */
-      --bg-primary: var(--light);
+      --bg-primary: #ffffff;
       --surface: #ffffff;
       --surface-elevated: #ffffff;
+      --surface-accent: #f8f9fa;
       
       /* Status colors */
       --success: #22daae;
-      --warning: #ff4dd8;
-      --danger: #ff6b6b;
+      --warning: #ffa901;
+      --danger: #ff4dd8;
       
       /* Effects */
-      --shadow: 0 10px 30px rgba(9, 16, 15, 0.08);
-      --shadow-elevated: 0 20px 40px rgba(9, 16, 15, 0.12);
-      --border-radius: 16px;
-      --border-radius-small: 8px;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
+      --border: 1px solid #e5e7eb;
+      --border-light: 1px solid #f3f4f6;
+      --border-radius: 12px;
+      --border-radius-small: 6px;
     }
 
     * { 
@@ -56,8 +60,8 @@
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-      color: var(--text-primary);
+      background: #ffffff;
+      color: #000000;
       line-height: 1.6;
     }
 
@@ -68,35 +72,34 @@
     }
 
     .header {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: var(--text-inverse);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #000000;
       padding: 32px;
       margin-bottom: 32px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .header h1 { 
       font-size: 32px; 
       font-weight: 700;
       margin-bottom: 8px;
-      background: linear-gradient(135deg, var(--light), rgba(255, 255, 255, 0.8));
+      background: linear-gradient(135deg, #22daae, #ff4dd8);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .header p { 
-      opacity: 0.9; 
+      color: rgba(0, 0, 0, 0.7);
       font-size: 16px;
       font-weight: 500;
     }
 
     .last-updated { 
       font-size: 14px; 
-      opacity: 0.8; 
+      color: rgba(0, 0, 0, 0.5);
       margin-top: 12px; 
       font-weight: 400;
     }
@@ -104,12 +107,12 @@
     /* View Toggle */
     .view-toggle {
       display: flex;
-      background: var(--surface);
+      background: #ffffff;
       border-radius: 12px;
       padding: 4px;
       margin-bottom: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(9, 16, 15, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
     }
 
     .toggle-option {
@@ -117,23 +120,23 @@
       padding: 12px 24px;
       border: none;
       background: transparent;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
       font-size: 14px;
-      color: var(--text-secondary);
+      color: rgba(0, 0, 0, 0.7);
       transition: all 0.2s ease;
     }
 
     .toggle-option.active {
-      background: linear-gradient(135deg, var(--primary), var(--primary-soft));
-      color: var(--text-inverse);
-      box-shadow: 0 4px 12px rgba(34, 218, 174, 0.3);
+      background: linear-gradient(135deg, #22daae, rgba(34, 218, 174, 0.8));
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(34, 218, 174, 0.3);
     }
 
     .toggle-option:hover:not(.active) {
-      background: var(--primary-light);
-      color: var(--text-primary);
+      background: rgba(34, 218, 174, 0.1);
+      color: #000000;
     }
 
     /* Controls */
@@ -145,25 +148,25 @@
     }
 
     .control {
-      background: var(--surface);
+      background: #ffffff;
       padding: 20px;
-      border-radius: var(--border-radius-small);
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(9, 16, 15, 0.1);
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
     }
 
     .control label { 
       display: block;
       font-weight: 600; 
       margin-bottom: 8px;
-      color: var(--text-primary);
+      color: #000000;
       font-size: 14px;
     }
 
     select, button {
       width: 100%;
-      border: 2px solid rgba(9, 16, 15, 0.1);
-      border-radius: var(--border-radius-small);
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
       padding: 12px 16px; 
       font-weight: 500; 
       font-size: 14px;
@@ -172,20 +175,20 @@
     }
 
     select { 
-      background: var(--surface); 
-      color: var(--text-primary);
+      background: #ffffff; 
+      color: #000000;
       cursor: pointer;
     }
 
     select:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-light);
+      border-color: #22daae;
+      box-shadow: 0 0 0 3px rgba(34, 218, 174, 0.1);
     }
 
     button { 
-      background: linear-gradient(135deg, var(--secondary), var(--secondary-soft));
-      color: var(--text-inverse); 
+      background: linear-gradient(135deg, #ff4dd8, rgba(255, 77, 216, 0.8));
+      color: #ffffff; 
       cursor: pointer;
       border: none;
       font-weight: 600;
@@ -193,7 +196,7 @@
 
     button:hover { 
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(255, 77, 216, 0.3);
+      box-shadow: 0 4px 12px rgba(255, 77, 216, 0.3);
     }
 
     button:disabled { 
@@ -205,17 +208,18 @@
     /* Error and loading states */
     .error {
       display: none; 
-      background: var(--danger); 
-      color: var(--text-inverse);
-      padding: 12px 14px; 
-      border-radius: 10px; 
+      background: #ff4dd8; 
+      color: #ffffff;
+      padding: 12px 16px; 
+      border-radius: 6px; 
       margin-bottom: 16px; 
       text-align: center;
-      box-shadow: var(--shadow);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #ff4dd8;
     }
 
     .loading { 
-      color: var(--text-inverse); 
+      color: rgba(0, 0, 0, 0.5); 
       text-align: center; 
       padding: 40px; 
       font-size: 16px; 
@@ -230,41 +234,43 @@
     }
 
     .stat {
-      background: var(--surface); 
+      background: #ffffff; 
       padding: 24px; 
-      border-radius: var(--border-radius-small);
+      border-radius: 6px;
       text-align: center; 
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(9, 16, 15, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
     }
 
     .stat .num { 
       font-size: 28px; 
       font-weight: 800; 
-      color: var(--primary);
+      color: #22daae;
       margin-bottom: 4px;
     }
 
     .stat .lbl { 
-      color: var(--text-muted); 
+      color: rgba(0, 0, 0, 0.5); 
       font-size: 13px; 
       font-weight: 500;
     }
 
     /* Monthly Winner Styles */
     .monthly-winner {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: var(--text-inverse);
+      background: linear-gradient(135deg, rgba(255, 169, 1, 0.1), rgba(255, 77, 216, 0.1));
+      color: #000000;
       padding: 24px;
-      border-radius: var(--border-radius);
+      border-radius: 12px;
       margin-bottom: 24px;
-      box-shadow: var(--shadow-elevated);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e5e7eb;
     }
 
     .monthly-winner h3 {
       margin-bottom: 16px;
       font-size: 18px;
       font-weight: 600;
+      color: #000000;
     }
 
     .winner-info {
@@ -283,10 +289,11 @@
       font-size: 20px;
       font-weight: 800;
       margin-bottom: 4px;
+      color: #000000;
     }
 
     .winner-name a {
-      color: inherit;
+      color: #22daae;
       text-decoration: none;
     }
 
@@ -297,7 +304,7 @@
     .winner-growth {
       font-size: 24px;
       font-weight: 900;
-      color: var(--light);
+      color: #22daae;
     }
 
     .period-selector {
@@ -307,33 +314,34 @@
     .period-selector label {
       margin-right: 8px;
       font-weight: 600;
+      color: #000000;
     }
 
     .period-selector select {
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--dark);
-      border: none;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #e5e7eb;
       padding: 8px 12px;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: 600;
       min-width: 200px;
     }
 
     /* Panel styles */
     .panel {
-      background: var(--surface); 
-      border-radius: var(--border-radius); 
+      background: #ffffff; 
+      border-radius: 12px; 
       padding: 24px; 
-      box-shadow: var(--shadow-elevated);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       margin-bottom: 24px;
-      border: 1px solid rgba(9, 16, 15, 0.1);
+      border: 1px solid #e5e7eb;
     }
 
     .panel h2 { 
       font-size: 20px; 
       margin-bottom: 20px; 
       font-weight: 600;
-      color: var(--text-primary);
+      color: #000000;
     }
 
     /* Leaderboard table styles */
@@ -353,89 +361,89 @@
     }
 
     .leaderboard-header {
-      color: var(--text-muted); 
+      color: rgba(0, 0, 0, 0.5); 
       font-weight: 700; 
-      border-bottom: 2px solid var(--primary-light);
+      border-bottom: 2px solid rgba(34, 218, 174, 0.1);
       margin-bottom: 8px;
-      background: var(--primary-light);
-      border-radius: var(--border-radius-small);
+      background: #f8f9fa;
+      border-radius: 6px;
     }
 
     .row {
-      border-radius: var(--border-radius-small); 
+      border-radius: 6px; 
       transition: all 0.2s ease;
       border-left: 4px solid transparent; 
       margin-bottom: 8px;
-      border: 1px solid transparent;
+      border: 1px solid #f3f4f6;
     }
 
     .row:hover { 
-      background: var(--primary-light); 
+      background: rgba(34, 218, 174, 0.1); 
       transform: translateX(4px); 
-      box-shadow: 0 4px 16px rgba(34, 218, 174, 0.15);
-      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-color: #22daae;
     }
 
     .row.rank-1 { 
-      background: linear-gradient(45deg, var(--primary), rgba(34, 218, 174, 0.1)); 
-      border-left-color: var(--primary); 
+      background: linear-gradient(45deg, rgba(34, 218, 174, 0.1), rgba(34, 218, 174, 0.05)); 
+      border-left-color: #22daae; 
     }
 
     .row.rank-2 { 
-      background: linear-gradient(45deg, var(--secondary), rgba(255, 77, 216, 0.1)); 
-      border-left-color: var(--secondary); 
+      background: linear-gradient(45deg, rgba(255, 77, 216, 0.1), rgba(255, 77, 216, 0.05)); 
+      border-left-color: #ff4dd8; 
     }
 
     .row.rank-3 { 
-      background: linear-gradient(45deg, var(--dark), rgba(9, 16, 15, 0.1)); 
-      border-left-color: var(--dark); 
+      background: linear-gradient(45deg, rgba(255, 169, 1, 0.1), rgba(255, 169, 1, 0.05)); 
+      border-left-color: #ffa901; 
     }
 
     .rank {
       width: 40px; 
       height: 40px; 
       border-radius: 50%; 
-      background: var(--surface-accent);
-      color: var(--text-secondary); 
+      background: #f8f9fa;
+      color: rgba(0, 0, 0, 0.7); 
       display: flex; 
       align-items: center; 
       justify-content: center;
       font-weight: 800; 
       font-size: 18px;
-      border: var(--border);
+      border: 1px solid #e5e7eb;
     }
 
     .row.rank-1 .rank { 
-      color: var(--text-inverse); 
-      background: var(--primary);
-      border-color: var(--primary);
+      color: #ffffff; 
+      background: #22daae;
+      border-color: #22daae;
     }
 
     .row.rank-2 .rank { 
-      color: var(--text-inverse); 
-      background: var(--secondary);
-      border-color: var(--secondary);
+      color: #ffffff; 
+      background: #ff4dd8;
+      border-color: #ff4dd8;
     }
 
     .row.rank-3 .rank { 
-      color: var(--text-inverse); 
-      background: var(--tertiary);
-      border-color: var(--tertiary);
+      color: #ffffff; 
+      background: #ffa901;
+      border-color: #ffa901;
     }
 
     .name a, .name div { 
       font-weight: 700; 
-      color: var(--text-primary); 
+      color: #000000; 
       text-decoration: none; 
     }
 
     .name a:hover { 
-      color: var(--primary); 
+      color: #22daae; 
       text-decoration: underline; 
     }
 
     .subtle { 
-      color: var(--text-muted); 
+      color: rgba(0, 0, 0, 0.5); 
       font-size: 13px; 
       margin-top: 2px; 
       font-weight: 500;
@@ -446,12 +454,12 @@
       font-weight: 800; 
     }
 
-    .pos { color: #22daae !important; }
-    .neg { color: #ff4dd8 !important; }
-    .neu { color: rgba(0, 0, 0, 0.5) !important; }
+    .pos { color: #22daae; }
+    .neg { color: #ff4dd8; }
+    .neu { color: rgba(0, 0, 0, 0.5); }
 
     .no-data { 
-      color: rgba(0, 0, 0, 0.5) !important; 
+      color: rgba(0, 0, 0, 0.5); 
       font-style: italic; 
       text-align: center; 
       padding: 40px; 
@@ -465,56 +473,27 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      background: rgba(34, 218, 174, 0.1) !important;
-      color: #000000 !important;
-      border: 1px solid rgba(34, 218, 174, 0.2) !important;
-    } 500;
-    }
-
-    .metric { 
-      text-align: center; 
-      font-weight: 800; 
-    }
-
-    .pos { color: var(--success); }
-    .neg { color: var(--danger); }
-    .neu { color: var(--text-muted); }
-
-    .no-data { 
-      color: var(--text-muted); 
-      font-style: italic; 
-      text-align: center; 
-      padding: 40px; 
-      font-size: 16px;
-    }
-
-    /* Badge styles for business lines */
-    .business-line-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background: var(--primary-light);
-      color: var(--text-primary);
+      background: rgba(34, 218, 174, 0.1);
+      color: #000000;
       border: 1px solid rgba(34, 218, 174, 0.2);
     }
 
     /* Chart styles */
     .chart-section {
       padding: 24px;
-      border-top: 1px solid rgba(9, 16, 15, 0.1);
-      background: var(--primary-light);
-      border-radius: 0 0 var(--border-radius) var(--border-radius);
+      border-top: 1px solid #e5e7eb;
+      background: #f8f9fa;
+      border-radius: 0 0 12px 12px;
     }
 
     .chart-container {
       position: relative;
       height: 400px;
-      background: var(--surface);
-      border-radius: var(--border-radius-small);
+      background: #ffffff;
+      border-radius: 6px;
       padding: 20px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
     }
 
     /* Responsive design */
@@ -607,6 +586,12 @@
         <label for="team">Business Line</label>
         <select id="team">
           <option value="all">All Teams</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="chartMonth">Chart Month Filter</label>
+        <select id="chartMonth">
+          <option value="all">All Months (Trend)</option>
         </select>
       </div>
       <div class="control">
@@ -753,13 +738,11 @@
 
         EMPLOYEES = Array.isArray(data.employees) ? data.employees : [];
         BUSINESS_LINES = Array.isArray(data.businessLines) ? data.businessLines : [];
-        MONTHLY_WINNERS = Array.isArray(data.monthlyWinners) ? data.monthlyWinners : [];
+        MONTHLY_WINNERS = data.monthlyWinners || [];
         SUMMARY = data.summary || {};
 
         console.log('Loaded employees:', EMPLOYEES.length);
         console.log('Loaded business lines:', BUSINESS_LINES.length);
-        console.log('Sample employee:', EMPLOYEES[0]);
-        console.log('Sample business line:', BUSINESS_LINES[0]);
 
         renderAll();
       } catch (err) {
@@ -773,6 +756,7 @@
     // ---------- Rendering ----------
     function renderAll() {
       populateTeamFilter();
+      populateChartMonthFilter();
       populatePeriodSelector();
       renderStats();
       renderBoard();
@@ -839,506 +823,28 @@
           sel.appendChild(opt);
         });
       } else {
-        // For business line view, we might want different filtering options
-        // For now, we'll keep it simple and hide the filter or make it less relevant
         sel.style.display = 'none';
       }
     }
 
-    function populatePeriodSelector() {
-      const select = document.getElementById('periodSelect');
-      if (!select) return;
+    function populateChartMonthFilter() {
+      const sel = document.getElementById('chartMonth');
+      if (!sel) return;
       
-      select.innerHTML = '<option value="">Select a month...</option>';
-      
-      // Use appropriate winners based on current view
-      const winners = currentView === 'employee' ? MONTHLY_WINNERS : 
-        (MONTHLY_WINNERS.businessLines || []);
-      
-      winners.forEach((winner, index) => {
-        const option = document.createElement('option');
-        option.value = winner.monthKey;
-        option.textContent = winner.month;
-        if (index === 0) option.selected = true;
-        select.appendChild(option);
-      });
-      
-      const section = document.getElementById('monthlyWinnerSection');
-      if (section) {
-        section.style.display = winners.length > 0 ? 'block' : 'none';
-      }
-      
-      if (winners.length > 0) {
-        showMonthlyWinner(winners[0]);
-      }
-    }
+      // Clear existing options except "All Months"
+      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
 
-    function showMonthlyWinner(winnerData) {
-      const nameEl = document.getElementById('winnerName');
-      const teamEl = document.getElementById('winnerTeam');
-      const growthEl = document.getElementById('winnerGrowth');
-      const titleEl = document.getElementById('winnerTitle');
+      // Collect all available months from the data
+      const allMonths = new Set();
       
-      if (titleEl) {
-        titleEl.textContent = currentView === 'employee' ? 'Monthly Champion' : 'Top Business Line';
-      }
-      
-      if (nameEl) {
-        if (currentView === 'employee' && winnerData.winner.linkedinProfile) {
-          nameEl.innerHTML = `<a href="${winnerData.winner.linkedinProfile}" target="_blank" rel="noopener noreferrer">${winnerData.winner.name}</a>`;
-        } else {
-          nameEl.textContent = winnerData.winner.name;
-        }
-      }
-      
-      if (teamEl) {
-        teamEl.textContent = currentView === 'employee' ? 
-          (winnerData.winner.businessLine || 'Unassigned') :
-          `${fmtPct(winnerData.winner.monthlyGrowthRate)} growth`;
-      }
-      
-      if (growthEl) {
-        growthEl.textContent = currentView === 'employee' ? 
-          `+${fmtInt(winnerData.winner.monthlyGrowth)}` :
-          `+${fmtInt(winnerData.winner.monthlyGrowth)}`;
-      }
-    }
-
-    function getFilteredEmployees() {
-      const teamVal = document.getElementById('team')?.value || 'all';
-      const list = (teamVal === 'all')
-        ? EMPLOYEES
-        : EMPLOYEES.filter(e => (e.businessLine || '').toLowerCase().includes(teamVal));
-      return [...list];
-    }
-
-    function getLatestMonthlyMetric(employee) {
-      if (!employee.monthlyMetrics || employee.monthlyMetrics.length === 0) {
-        return {
-          currentFollowers: employee.metrics?.currentFollowers || 0,
-          monthlyGrowth: 0,
-          monthlyGrowthRate: 0
-        };
-      }
-      const latest = employee.monthlyMetrics[employee.monthlyMetrics.length - 1];
-      return {
-        currentFollowers: latest.currentFollowers || 0,
-        monthlyGrowth: latest.monthlyGrowth || 0,
-        monthlyGrowthRate: latest.monthlyGrowthRate || 0
-      };
-    }
-
-    function renderBoard() {
-      const metric = document.getElementById('metric')?.value || 'monthlyGrowth';
-      const board = document.getElementById('board');
-      const metricHeader = document.getElementById('metricHeader');
-      
-      if (!board) return;
-
-      // Update header based on view and metric
-      const headerMap = {
-        monthlyGrowth: 'Monthly Growth',
-        monthlyGrowthRate: 'Growth %',
-        currentFollowers: 'Followers',
-        overallGrowthRate: 'Overall Growth %'
-      };
-      
-      if (metricHeader) metricHeader.textContent = headerMap[metric];
-
       if (currentView === 'employee') {
-        renderEmployeeBoard(metric, board);
-      } else {
-        renderBusinessLineBoard(metric, board);
-      }
-    }
-
-    function renderEmployeeBoard(metric, board) {
-      // Update headers for employee view
-      const container = document.getElementById('leaderboardContainer');
-      if (container) {
-        container.querySelector('.leaderboard-header').innerHTML = `
-          <div>Rank</div>
-          <div>Employee</div>
-          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
-          <div>Follower Count</div>
-          <div>Absolute Growth</div>
-        `;
-      }
-
-      let rows = getFilteredEmployees();
-      
-      // Sort based on selected metric
-      if (metric === 'monthlyGrowth') {
-        rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.monthlyGrowth - aMetric.monthlyGrowth;
-        });
-      } else if (metric === 'monthlyGrowthRate') {
-        rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.monthlyGrowthRate - aMetric.monthlyGrowthRate;
-        });
-      } else if (metric === 'currentFollowers') {
-        rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.currentFollowers - aMetric.currentFollowers;
-        });
-      } else if (metric === 'overallGrowthRate') {
-        rows = rows.sort((a, b) => (b.metrics?.growthRate ?? 0) - (a.metrics?.growthRate ?? 0));
-      }
-
-      if (!rows.length) {
-        board.innerHTML = '<div class="no-data">No employee data available for selected filters.</div>';
-        return;
-      }
-
-      const html = rows.map((e, i) => {
-        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
-        const monthlyMetric = getLatestMonthlyMetric(e);
-        
-        let val, display;
-        if (metric === 'monthlyGrowth') {
-          val = monthlyMetric.monthlyGrowth;
-          display = fmtInt(val);
-        } else if (metric === 'monthlyGrowthRate') {
-          val = monthlyMetric.monthlyGrowthRate;
-          display = fmtPct(val);
-        } else if (metric === 'currentFollowers') {
-          val = monthlyMetric.currentFollowers;
-          display = fmtInt(val);
-        } else if (metric === 'overallGrowthRate') {
-          val = e.metrics?.growthRate ?? 0;
-          display = fmtPct(val);
-        }
-        
-        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
-        
-        const followerCount = fmtInt(monthlyMetric.currentFollowers);
-        const absoluteGrowth = monthlyMetric.monthlyGrowth;
-        const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
-        const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
-
-        const nameHtml = e.linkedinProfile
-          ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
-          : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
-
-        return `
-          <div class="row${rankClass}">
-            <div class="rank">${i + 1}</div>
-            <div class="name">
-              ${nameHtml}
-              <div class="subtle"><span class="business-line-badge">${safeStr(e.businessLine || 'Unassigned')}</span></div>
-            </div>
-            <div class="metric ${valCls}">${display}</div>
-            <div class="metric">${followerCount}</div>
-            <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
-          </div>
-        `;
-      }).join('');
-
-      board.innerHTML = html;
-    }
-
-    function renderBusinessLineBoard(metric, board) {
-      // Update headers for business line view
-      const container = document.getElementById('leaderboardContainer');
-      if (container) {
-        container.querySelector('.leaderboard-header').innerHTML = `
-          <div>Rank</div>
-          <div>Business Line</div>
-          <div>Employees</div>
-          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
-          <div>Total Followers</div>
-          <div>Avg per Employee</div>
-        `;
-      }
-
-      let rows = [...BUSINESS_LINES];
-      
-      // Sort based on selected metric
-      if (metric === 'monthlyGrowth') {
-        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowth || 0) - (a.metrics?.monthlyGrowth || 0));
-      } else if (metric === 'monthlyGrowthRate') {
-        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowthRate || 0) - (a.metrics?.monthlyGrowthRate || 0));
-      } else if (metric === 'currentFollowers') {
-        rows = rows.sort((a, b) => (b.metrics?.currentFollowers || 0) - (a.metrics?.currentFollowers || 0));
-      } else if (metric === 'overallGrowthRate') {
-        rows = rows.sort((a, b) => (b.metrics?.growthRate || 0) - (a.metrics?.growthRate || 0));
-      }
-
-      if (!rows.length) {
-        board.innerHTML = '<div class="no-data">No business line data available.</div>';
-        return;
-      }
-
-      const html = rows.map((bl, i) => {
-        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
-        
-        let val, display;
-        if (metric === 'monthlyGrowth') {
-          val = bl.metrics?.monthlyGrowth || 0;
-          display = fmtInt(val);
-        } else if (metric === 'monthlyGrowthRate') {
-          val = bl.metrics?.monthlyGrowthRate || 0;
-          display = fmtPct(val);
-        } else if (metric === 'currentFollowers') {
-          val = bl.metrics?.currentFollowers || 0;
-          display = fmtInt(val);
-        } else if (metric === 'overallGrowthRate') {
-          val = bl.metrics?.growthRate || 0;
-          display = fmtPct(val);
-        }
-        
-        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
-        const totalFollowers = fmtInt(bl.metrics?.currentFollowers || 0);
-        const avgPerEmployee = bl.employeeCount > 0 ? 
-          fmtInt(Math.round((bl.metrics?.currentFollowers || 0) / bl.employeeCount)) : '0';
-
-        return `
-          <div class="row${rankClass}">
-            <div class="rank">${i + 1}</div>
-            <div class="name">
-              <div>${safeStr(bl.name)}</div>
-              <div class="subtle">${bl.employeeCount} employees</div>
-            </div>
-            <div class="metric">${bl.employeeCount}</div>
-            <div class="metric ${valCls}">${display}</div>
-            <div class="metric">${totalFollowers}</div>
-            <div class="metric">${avgPerEmployee}</div>
-          </div>
-        `;
-      }).join('');
-
-      board.innerHTML = html;
-    }
-
-    function renderChart() {
-      const ctx = document.getElementById('chart')?.getContext('2d');
-      if (!ctx) return;
-
-      const chartTitle = document.getElementById('chartTitle');
-      if (chartTitle) {
-        chartTitle.textContent = currentView === 'employee' ? 
-          'Top 10 Employee Growth Trends' : 
-          'Business Line Growth Trends';
-      }
-
-      if (chart) chart.destroy();
-
-      let datasets = [];
-      let labels = [];
-
-      if (currentView === 'employee') {
-        // Employee chart logic (existing)
-        const top10 = getFilteredEmployees()
-          .filter(e => typeof e.metrics?.growthRate === 'number')
-          .sort((a, b) => b.metrics.growthRate - a.metrics.growthRate)
-          .slice(0, 10);
-
-        const allMonths = new Set();
-        top10.forEach(e => {
-          if (e.monthlyFollowers) {
-            Object.keys(e.monthlyFollowers).forEach(monthKey => allMonths.add(monthKey));
+        EMPLOYEES.forEach(emp => {
+          if (emp.monthlyFollowers) {
+            Object.keys(emp.monthlyFollowers).forEach(monthKey => {
+              const monthData = emp.monthlyFollowers[monthKey];
+              allMonths.add(JSON.stringify({
+                key: monthKey,
+                display: monthData.displayName
+              }));
+            });
           }
-        });
-        labels = Array.from(allMonths).sort().map(monthKey => {
-          const monthData = top10.find(e => e.monthlyFollowers?.[monthKey]);
-          return monthData?.monthlyFollowers?.[monthKey]?.displayName || monthKey;
-        });
-
-        datasets = top10.map((e, index) => {
-          const colors = ['#22daae', '#ff4dd8', '#09100f', '#f9f8f5'];
-          return {
-            label: `${safeStr(e.firstName)} ${safeStr(e.lastName)}`.trim(),
-            data: labels.map((_, labelIndex) => {
-              const sortedMonths = Array.from(allMonths).sort();
-              const monthKey = sortedMonths[labelIndex];
-              return e.monthlyFollowers?.[monthKey]?.followers ?? null;
-            }),
-            borderColor: colors[index % colors.length],
-            backgroundColor: colors[index % colors.length] + '20',
-            borderWidth: 3,
-            spanGaps: true,
-            tension: 0.3
-          };
-        });
-      } else {
-        // Business line chart logic
-        const allMonths = new Set();
-        BUSINESS_LINES.forEach(bl => {
-          if (bl.monthlyFollowers) {
-            Object.keys(bl.monthlyFollowers).forEach(monthKey => allMonths.add(monthKey));
-          }
-        });
-        labels = Array.from(allMonths).sort().map(monthKey => {
-          const monthData = BUSINESS_LINES.find(bl => bl.monthlyFollowers?.[monthKey]);
-          return monthData?.monthlyFollowers?.[monthKey]?.displayName || monthKey;
-        });
-
-        datasets = BUSINESS_LINES.map((bl, index) => {
-          const colors = ['#22daae', '#ff4dd8', '#09100f', '#f9f8f5'];
-          return {
-            label: bl.name,
-            data: labels.map((_, labelIndex) => {
-              const sortedMonths = Array.from(allMonths).sort();
-              const monthKey = sortedMonths[labelIndex];
-              return bl.monthlyFollowers?.[monthKey]?.followers ?? null;
-            }),
-            borderColor: colors[index % colors.length],
-            backgroundColor: colors[index % colors.length] + '20',
-            borderWidth: 3,
-            spanGaps: true,
-            tension: 0.3
-          };
-        });
-      }
-
-      if (!labels.length || !datasets.length) return;
-
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: { 
-              display: true, 
-              text: currentView === 'employee' ? 
-                'LinkedIn Follower Growth Trends' : 
-                'Business Line Growth Trends',
-              font: {
-                family: 'Inter',
-                size: 16,
-                weight: '600'
-              },
-              color: '#09100f'
-            },
-            legend: { 
-              display: true, 
-              position: 'bottom',
-              labels: {
-                usePointStyle: true,
-                padding: 20,
-                font: {
-                  family: 'Inter',
-                  size: 12,
-                  weight: '500'
-                },
-                color: '#09100f'
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(9, 16, 15, 0.9)',
-              titleColor: '#f9f8f5',
-              bodyColor: '#f9f8f5',
-              borderColor: '#22daae',
-              borderWidth: 1,
-              cornerRadius: 8,
-              displayColors: true,
-              titleFont: {
-                family: 'Inter',
-                size: 13,
-                weight: '600'
-              },
-              bodyFont: {
-                family: 'Inter',
-                size: 12
-              }
-            }
-          },
-          scales: {
-            y: { 
-              beginAtZero: false, 
-              title: { 
-                display: true, 
-                text: 'Followers',
-                font: {
-                  family: 'Inter',
-                  size: 12,
-                  weight: '500'
-                },
-                color: '#09100f'
-              },
-              grid: {
-                color: 'rgba(9, 16, 15, 0.1)'
-              },
-              ticks: {
-                font: {
-                  family: 'Inter',
-                  size: 11
-                },
-                color: 'rgba(9, 16, 15, 0.7)'
-              }
-            },
-            x: { 
-              title: { 
-                display: true, 
-                text: 'Month',
-                font: {
-                  family: 'Inter',
-                  size: 12,
-                  weight: '500'
-                },
-                color: '#09100f'
-              },
-              grid: {
-                color: 'rgba(9, 16, 15, 0.1)'
-              },
-              ticks: {
-                font: {
-                  family: 'Inter',
-                  size: 11
-                },
-                color: 'rgba(9, 16, 15, 0.7)'
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // ---------- Events ----------
-    document.addEventListener('DOMContentLoaded', () => {
-      const metricSelect = document.getElementById('metric');
-      const teamSelect = document.getElementById('team');
-      const chartMonthSelect = document.getElementById('chartMonth');
-      const refreshBtn = document.getElementById('refresh');
-      const periodSelect = document.getElementById('periodSelect');
-
-      if (metricSelect) metricSelect.addEventListener('change', () => {
-        renderBoard(); 
-        renderChart();
-      });
-      
-      if (teamSelect) teamSelect.addEventListener('change', () => {
-        renderBoard(); 
-        renderChart();
-      });
-
-      if (chartMonthSelect) chartMonthSelect.addEventListener('change', () => {
-        renderChart();
-      });
-      
-      if (refreshBtn) refreshBtn.addEventListener('click', fetchData);
-
-      if (periodSelect) periodSelect.addEventListener('change', (e) => {
-        const selectedMonth = e.target.value;
-        const winners = currentView === 'employee' ? MONTHLY_WINNERS : 
-          (MONTHLY_WINNERS.businessLines || []);
-        const winnerData = winners.find(w => w.monthKey === selectedMonth);
-        if (winnerData) {
-          showMonthlyWinner(winnerData);
-        }
-      });
-
-      // Initialize
-      fetchData();
-      setInterval(fetchData, 5 * 60 * 1000);
-    });
-  </script>
-</body>
-</html>
