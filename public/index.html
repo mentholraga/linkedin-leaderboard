@@ -4,551 +4,39 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>LinkedIn Growth Leaderboard</title>
-  <meta name="description" content="Track LinkedIn growth across teams with an interactive leaderboard and trend chart." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      /* Clean color scheme */
-      --primary: #22daae;
-      --secondary: #ff4dd8;
-      --tertiary: #ffa901;
-      
-      /* Derived colors */
-      --primary-light: rgba(34, 218, 174, 0.1);
-      --primary-soft: rgba(34, 218, 174, 0.8);
-      --secondary-light: rgba(255, 77, 216, 0.1);
-      --secondary-soft: rgba(255, 77, 216, 0.8);
-      --tertiary-light: rgba(255, 169, 1, 0.1);
-      --tertiary-soft: rgba(255, 169, 1, 0.8);
-      
-      /* Text colors */
-      --text-primary: #000000;
-      --text-secondary: rgba(0, 0, 0, 0.7);
-      --text-muted: rgba(0, 0, 0, 0.5);
-      --text-inverse: #ffffff;
-      
-      /* Background and surface colors */
-      --bg-primary: #ffffff;
-      --surface: #ffffff;
-      --surface-elevated: #ffffff;
-      --surface-accent: #f8f9fa;
-      
-      /* Status colors */
-      --success: #22daae;
-      --warning: #ffa901;
-      --danger: #ff4dd8;
-      
-      /* Effects */
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
-      --border: 1px solid #e5e7eb;
-      --border-light: 1px solid #f3f4f6;
-      --border-radius: 12px;
-      --border-radius-small: 6px;
-    }
-
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
-    }
-
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       min-height: 100vh;
       background: #ffffff;
       color: #000000;
-      line-height: 1.6;
+      margin: 0;
+      padding: 24px;
     }
-
-    .container { 
-      max-width: 1200px; 
-      margin: 0 auto; 
-      padding: 24px; 
-    }
-
+    .container { max-width: 1200px; margin: 0 auto; }
     .header {
       background: #ffffff;
       border: 1px solid #e5e7eb;
-      color: #000000;
       padding: 32px;
       margin-bottom: 32px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-
-    .header h1 { 
-      font-size: 32px; 
-      font-weight: 700;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #22daae, #ff4dd8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .header p { 
-      color: rgba(0, 0, 0, 0.7);
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    .last-updated { 
-      font-size: 14px; 
-      color: rgba(0, 0, 0, 0.5);
-      margin-top: 12px; 
-      font-weight: 400;
-    }
-
-    /* View Toggle */
-    .view-toggle {
-      display: flex;
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 4px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-    }
-
-    .toggle-option {
-      flex: 1;
-      padding: 12px 24px;
-      border: none;
-      background: transparent;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      color: rgba(0, 0, 0, 0.7);
-      transition: all 0.2s ease;
-    }
-
-    .toggle-option.active {
-      background: linear-gradient(135deg, #22daae, rgba(34, 218, 174, 0.8));
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(34, 218, 174, 0.3);
-    }
-
-    .toggle-option:hover:not(.active) {
-      background: rgba(34, 218, 174, 0.1);
-      color: #000000;
-    }
-
-    /* Controls */
-    .controls {
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px; 
-      margin-bottom: 24px;
-    }
-
-    .control {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-    }
-
-    .control label { 
-      display: block;
-      font-weight: 600; 
-      margin-bottom: 8px;
-      color: #000000;
-      font-size: 14px;
-    }
-
-    select, button {
-      width: 100%;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 12px 16px; 
-      font-weight: 500; 
-      font-size: 14px;
-      transition: all 0.2s ease;
-      font-family: inherit;
-    }
-
-    select { 
-      background: #ffffff; 
-      color: #000000;
-      cursor: pointer;
-    }
-
-    select:focus {
-      outline: none;
-      border-color: #22daae;
-      box-shadow: 0 0 0 3px rgba(34, 218, 174, 0.1);
-    }
-
-    button { 
-      background: linear-gradient(135deg, #ff4dd8, rgba(255, 77, 216, 0.8));
-      color: #ffffff; 
-      cursor: pointer;
-      border: none;
-      font-weight: 600;
-    }
-
-    button:hover { 
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255, 77, 216, 0.3);
-    }
-
-    button:disabled { 
-      opacity: 0.6; 
-      cursor: not-allowed; 
-      transform: none; 
-    }
-
-    /* Error and loading states */
-    .error {
-      display: none; 
-      background: #ff4dd8; 
-      color: #ffffff;
-      padding: 12px 16px; 
-      border-radius: 6px; 
-      margin-bottom: 16px; 
+    .loading {
       text-align: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #ff4dd8;
-    }
-
-    .loading { 
-      color: rgba(0, 0, 0, 0.5); 
-      text-align: center; 
-      padding: 40px; 
-      font-size: 16px; 
-    }
-
-    /* Stats grid */
-    .stats {
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px; 
-      margin-bottom: 24px;
-    }
-
-    .stat {
-      background: #ffffff; 
-      padding: 24px; 
-      border-radius: 6px;
-      text-align: center; 
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-    }
-
-    .stat .num { 
-      font-size: 28px; 
-      font-weight: 800; 
-      color: #22daae;
-      margin-bottom: 4px;
-    }
-
-    .stat .lbl { 
-      color: rgba(0, 0, 0, 0.5); 
-      font-size: 13px; 
-      font-weight: 500;
-    }
-
-    /* Monthly Winner Styles */
-    .monthly-winner {
-      background: linear-gradient(135deg, rgba(255, 169, 1, 0.1), rgba(255, 77, 216, 0.1));
-      color: #000000;
-      padding: 24px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      border: 1px solid #e5e7eb;
-    }
-
-    .monthly-winner h3 {
-      margin-bottom: 16px;
-      font-size: 18px;
-      font-weight: 600;
-      color: #000000;
-    }
-
-    .winner-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .winner-details {
-      flex: 1;
-    }
-
-    .winner-name {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 4px;
-      color: #000000;
-    }
-
-    .winner-name a {
-      color: #22daae;
-      text-decoration: none;
-    }
-
-    .winner-name a:hover {
-      text-decoration: underline;
-    }
-
-    .winner-growth {
-      font-size: 24px;
-      font-weight: 900;
-      color: #22daae;
-    }
-
-    .period-selector {
-      margin-bottom: 16px;
-    }
-
-    .period-selector label {
-      margin-right: 8px;
-      font-weight: 600;
-      color: #000000;
-    }
-
-    .period-selector select {
-      background: #ffffff;
-      color: #000000;
-      border: 1px solid #e5e7eb;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-weight: 600;
-      min-width: 200px;
-    }
-
-    /* Panel styles */
-    .panel {
-      background: #ffffff; 
-      border-radius: 12px; 
-      padding: 24px; 
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      margin-bottom: 24px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .panel h2 { 
-      font-size: 20px; 
-      margin-bottom: 20px; 
-      font-weight: 600;
-      color: #000000;
-    }
-
-    /* Leaderboard table styles */
-    .leaderboard-header, .row {
-      display: grid; 
-      align-items: center; 
-      gap: 16px;
-      padding: 16px 20px;
-    }
-
-    .employee-view .leaderboard-header, .employee-view .row {
-      grid-template-columns: 56px 1fr 120px 120px 120px;
-    }
-
-    .business-line-view .leaderboard-header, .business-line-view .row {
-      grid-template-columns: 56px 1fr 100px 120px 120px 120px;
-    }
-
-    .leaderboard-header {
-      color: rgba(0, 0, 0, 0.5); 
-      font-weight: 700; 
-      border-bottom: 2px solid rgba(34, 218, 174, 0.1);
-      margin-bottom: 8px;
-      background: #f8f9fa;
-      border-radius: 6px;
-    }
-
-    .row {
-      border-radius: 6px; 
-      transition: all 0.2s ease;
-      border-left: 4px solid transparent; 
-      margin-bottom: 8px;
-      border: 1px solid #f3f4f6;
-    }
-
-    .row:hover { 
-      background: rgba(34, 218, 174, 0.1); 
-      transform: translateX(4px); 
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border-color: #22daae;
-    }
-
-    .row.rank-1 { 
-      background: linear-gradient(45deg, rgba(34, 218, 174, 0.1), rgba(34, 218, 174, 0.05)); 
-      border-left-color: #22daae; 
-    }
-
-    .row.rank-2 { 
-      background: linear-gradient(45deg, rgba(255, 77, 216, 0.1), rgba(255, 77, 216, 0.05)); 
-      border-left-color: #ff4dd8; 
-    }
-
-    .row.rank-3 { 
-      background: linear-gradient(45deg, rgba(255, 169, 1, 0.1), rgba(255, 169, 1, 0.05)); 
-      border-left-color: #ffa901; 
-    }
-
-    .rank {
-      width: 40px; 
-      height: 40px; 
-      border-radius: 50%; 
-      background: #f8f9fa;
-      color: rgba(0, 0, 0, 0.7); 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      font-weight: 800; 
-      font-size: 18px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .row.rank-1 .rank { 
-      color: #ffffff; 
-      background: #22daae;
-      border-color: #22daae;
-    }
-
-    .row.rank-2 .rank { 
-      color: #ffffff; 
-      background: #ff4dd8;
-      border-color: #ff4dd8;
-    }
-
-    .row.rank-3 .rank { 
-      color: #ffffff; 
-      background: #ffa901;
-      border-color: #ffa901;
-    }
-
-    .name a, .name div { 
-      font-weight: 700; 
-      color: #000000; 
-      text-decoration: none; 
-    }
-
-    .name a:hover { 
-      color: #22daae; 
-      text-decoration: underline; 
-    }
-
-    .subtle { 
-      color: rgba(0, 0, 0, 0.5); 
-      font-size: 13px; 
-      margin-top: 2px; 
-      font-weight: 500;
-    }
-
-    .metric { 
-      text-align: center; 
-      font-weight: 800; 
-    }
-
-    .pos { color: #22daae; }
-    .neg { color: #ff4dd8; }
-    .neu { color: rgba(0, 0, 0, 0.5); }
-
-    .no-data { 
-      color: rgba(0, 0, 0, 0.5); 
-      font-style: italic; 
-      text-align: center; 
-      padding: 40px; 
+      padding: 40px;
       font-size: 16px;
     }
-
-    /* Badge styles for business lines */
-    .business-line-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(34, 218, 174, 0.1);
-      color: #000000;
-      border: 1px solid rgba(34, 218, 174, 0.2);
-    }
-
-    /* Chart styles */
-    .chart-section {
-      padding: 24px;
-      border-top: 1px solid #e5e7eb;
-      background: #f8f9fa;
-      border-radius: 0 0 12px 12px;
-    }
-
-    .chart-container {
-      position: relative;
-      height: 400px;
-      background: #ffffff;
+    .error {
+      display: none;
+      background: #ff4dd8;
+      color: white;
+      padding: 12px;
       border-radius: 6px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-    }
-
-    /* Responsive design */
-    @media (max-width: 768px) {
-      .container {
-        padding: 16px;
-      }
-      
-      .header {
-        padding: 24px 20px;
-      }
-      
-      .header h1 {
-        font-size: 24px;
-      }
-      
-      .controls {
-        grid-template-columns: 1fr;
-      }
-      
-      .view-toggle {
-        flex-direction: column;
-      }
-      
-      .leaderboard-header, .row { 
-        grid-template-columns: 50px 1fr 110px; 
-      }
-      
-      .leaderboard-header > :nth-child(n+4), .row > :nth-child(n+4) { 
-        display: none; 
-      }
-      
-      .winner-info { 
-        flex-direction: column; 
-        text-align: center; 
-      }
-      
-      .period-selector { 
-        text-align: center; 
-      }
-      
-      .period-selector select { 
-        min-width: auto; 
-        width: 100%; 
-      }
-    }
-
-    /* Animation for view transitions */
-    .fade-transition {
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .fade-transition.visible {
-      opacity: 1;
+      margin-bottom: 16px;
+      text-align: center;
     }
   </style>
 </head>
@@ -557,275 +45,59 @@
     <header class="header">
       <h1>LinkedIn Growth Leaderboard</h1>
       <p>Track individual and business line LinkedIn network growth performance</p>
-      <div class="last-updated" id="lastUpdated"></div>
+      <div id="lastUpdated"></div>
     </header>
 
     <div id="error" class="error"></div>
-
-    <!-- View Toggle -->
-    <div class="view-toggle">
-      <button class="toggle-option active" id="employeeView" onclick="switchView('employee')">
-        Individual Employees
-      </button>
-      <button class="toggle-option" id="businessLineView" onclick="switchView('businessLine')">
-        Business Lines
-      </button>
-    </div>
-
-    <section class="controls">
-      <div class="control">
-        <label for="metric">Sort by</label>
-        <select id="metric">
-          <option value="monthlyGrowth">Monthly Growth (Followers)</option>
-          <option value="monthlyGrowthRate">Monthly Growth %</option>
-          <option value="currentFollowers">Follower Count</option>
-          <option value="overallGrowthRate">Overall Growth %</option>
-        </select>
-      </div>
-      <div class="control">
-        <label for="team">Business Line</label>
-        <select id="team">
-          <option value="all">All Teams</option>
-        </select>
-      </div>
-      <div class="control">
-        <label for="chartMonth">Chart Month Filter</label>
-        <select id="chartMonth">
-          <option value="all">All Months (Trend)</option>
-        </select>
-      </div>
-      <div class="control">
-        <label>&nbsp;</label>
-        <button id="refresh">Refresh Data</button>
-      </div>
-    </section>
-
     <div id="loading" class="loading">Loading leaderboard data…</div>
-
-    <main id="main" style="display:none">
-      <section class="stats">
-        <article class="stat">
-          <div class="num" id="statTotal">-</div>
-          <div class="lbl" id="statTotalLabel">Active Employees</div>
-        </article>
-        <article class="stat">
-          <div class="num" id="statAvgGrowth">-</div>
-          <div class="lbl">Avg Growth Rate</div>
-        </article>
-        <article class="stat">
-          <div class="num" id="statTopGrower">-</div>
-          <div class="lbl" id="statTopGrowerLabel">Top Grower</div>
-        </article>
-        <article class="stat">
-          <div class="num" id="statTotalFollowers">-</div>
-          <div class="lbl">Total Network</div>
-        </article>
-      </section>
-
-      <section class="monthly-winner" id="monthlyWinnerSection" style="display:none">
-        <div class="period-selector">
-          <label for="periodSelect">Monthly Winners:</label>
-          <select id="periodSelect">
-            <option value="">Select a month...</option>
-          </select>
-        </div>
-        <div id="monthlyWinnerContent">
-          <h3 id="winnerTitle">Monthly Champion</h3>
-          <div class="winner-info">
-            <div class="winner-details">
-              <div class="winner-name" id="winnerName">—</div>
-              <div class="subtle" id="winnerTeam">—</div>
-            </div>
-            <div class="winner-growth" id="winnerGrowth">—</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div id="leaderboardContainer" class="employee-view">
-          <div class="leaderboard-header">
-            <div>Rank</div>
-            <div>Employee</div>
-            <div id="metricHeader">Monthly Growth</div>
-            <div>Follower Count</div>
-            <div>Absolute Growth</div>
-          </div>
-          <div id="board"></div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="chart-section">
-          <h2 id="chartTitle">Top 10 Growth Trends</h2>
-          <div class="chart-container">
-            <canvas id="chart" width="400" height="220" aria-label="Growth trend lines" role="img"></canvas>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div id="main" style="display:none">
+      <p>Data loaded successfully!</p>
+      <div id="debug"></div>
+    </div>
   </div>
 
   <script>
-    const API_BASE = '/api';
-    let EMPLOYEES = [];
-    let BUSINESS_LINES = [];
-    let MONTHLY_WINNERS = [];
-    let SUMMARY = {};
-    let chart;
-    let currentView = 'employee';
-
-    // ---------- Utilities ----------
-    const fmtPct = (n) => `${Number(n || 0).toFixed(1)}%`;
-    const fmtInt = (n) => Number(n || 0).toLocaleString();
-    const safeStr = (s) => (s == null ? '' : String(s));
-
-    function setLoading(on) {
-      const loading = document.getElementById('loading');
-      const main = document.getElementById('main');
-      const refresh = document.getElementById('refresh');
+    console.log('=== SCRIPT STARTED ===');
+    
+    // Test basic functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('=== DOM LOADED ===');
       
-      if (loading) loading.style.display = on ? 'block' : 'none';
-      if (main) main.style.display = on ? 'none' : 'block';
-      if (refresh) refresh.disabled = on;
-    }
-
-    function showError(msg) {
-      const box = document.getElementById('error');
-      if (box) {
-        box.textContent = msg;
-        box.style.display = 'block';
-      }
-    }
-
-    function hideError() {
-      const box = document.getElementById('error');
-      if (box) box.style.display = 'none';
-    }
-
-    function switchView(view) {
-      currentView = view;
+      const API_BASE = '/api';
       
-      // Update toggle buttons
-      document.getElementById('employeeView').classList.toggle('active', view === 'employee');
-      document.getElementById('businessLineView').classList.toggle('active', view === 'businessLine');
-      
-      // Update container class
-      const container = document.getElementById('leaderboardContainer');
-      if (container) {
-        container.className = view === 'employee' ? 'employee-view' : 'business-line-view';
-      }
-      
-      // Add fade transition
-      const main = document.getElementById('main');
-      if (main) {
-        main.classList.add('fade-transition');
-        
-        setTimeout(() => {
-          renderAll();
-          main.classList.add('visible');
-        }, 150);
-      }
-    }
-
-    // ---------- Data fetch + normalization ----------
-    async function fetchData() {
-      setLoading(true);
-      hideError();
-      try {
-        const res = await fetch(`${API_BASE}/employees`, { headers: { 'Accept': 'application/json' } });
-        if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
-        const data = await res.json();
-
-        EMPLOYEES = Array.isArray(data.employees) ? data.employees : [];
-        BUSINESS_LINES = Array.isArray(data.businessLines) ? data.businessLines : [];
-        MONTHLY_WINNERS = data.monthlyWinners || [];
-        SUMMARY = data.summary || {};
-
-        console.log('Loaded employees:', EMPLOYEES.length);
-        console.log('Loaded business lines:', BUSINESS_LINES.length);
-
-        renderAll();
-      } catch (err) {
-        console.error('Fetch error:', err);
-        showError(`Failed to load data: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    // ---------- Rendering ----------
-    function renderAll() {
-      populateTeamFilter();
-      populateChartMonthFilter();
-      populatePeriodSelector();
-      renderStats();
-      renderBoard();
-      renderChart();
-      renderLastUpdated();
-    }
-
-    function renderLastUpdated() {
-      const el = document.getElementById('lastUpdated');
-      if (el) {
-        const ts = SUMMARY.lastUpdated ? new Date(SUMMARY.lastUpdated) : null;
-        el.textContent = ts ? `Last updated: ${ts.toLocaleString()}` : '';
-      }
-    }
-
-    function renderStats() {
-      const statTotal = document.getElementById('statTotal');
-      const statTotalLabel = document.getElementById('statTotalLabel');
-      const statAvgGrowth = document.getElementById('statAvgGrowth');
-      const statTopGrower = document.getElementById('statTopGrower');
-      const statTopGrowerLabel = document.getElementById('statTopGrowerLabel');
-      const statTotalFollowers = document.getElementById('statTotalFollowers');
-
-      // Only show employee stats for now (until business lines are implemented)
-      if (statTotal) statTotal.textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
-      if (statTotalLabel) statTotalLabel.textContent = 'Active Employees';
-      if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
-      if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
-      if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
-      if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
-    }
-
-    function populateTeamFilter() {
-      const sel = document.getElementById('team');
-      if (!sel) return;
-      
-      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
-
-      if (currentView === 'employee') {
-        const lines = [...new Set(EMPLOYEES.map(e => e.businessLine).filter(Boolean))].sort();
-        lines.forEach(line => {
-          const opt = document.createElement('option');
-          opt.value = line.toLowerCase();
-          opt.textContent = line;
-          sel.appendChild(opt);
-        });
-      } else {
-        sel.style.display = 'none';
-      }
-    }
-
-    function populateChartMonthFilter() {
-      const sel = document.getElementById('chartMonth');
-      if (!sel) return;
-      
-      // Clear existing options except "All Months"
-      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
-
-      // Collect all available months from the data
-      const allMonths = new Set();
-      
-      if (currentView === 'employee') {
-        EMPLOYEES.forEach(emp => {
-          if (emp.monthlyFollowers) {
-            Object.keys(emp.monthlyFollowers).forEach(monthKey => {
-              const monthData = emp.monthlyFollowers[monthKey];
-              allMonths.add(JSON.stringify({
-                key: monthKey,
-                display: monthData.displayName
-              }));
-            });
+      async function testFetch() {
+        console.log('=== TESTING FETCH ===');
+        try {
+          const response = await fetch(`${API_BASE}/employees`);
+          console.log('Response status:', response.status);
+          console.log('Response ok:', response.ok);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Data received:', data);
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main').style.display = 'block';
+            document.getElementById('debug').innerHTML = `
+              <h3>API Response:</h3>
+              <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+          } else {
+            throw new Error(`HTTP ${response.status}`);
           }
+        } catch (error) {
+          console.error('Fetch error:', error);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('error').textContent = `Error: ${error.message}`;
+        }
+      }
+      
+      console.log('=== CALLING TEST FETCH ===');
+      testFetch();
+    });
+    
+    console.log('=== SCRIPT LOADED ===');
+  </script>
+</body>
+</html>
