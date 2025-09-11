@@ -446,12 +446,12 @@
       font-weight: 800; 
     }
 
-    .pos { color: var(--success); }
-    .neg { color: var(--danger); }
-    .neu { color: var(--text-muted); }
+    .pos { color: #22daae !important; }
+    .neg { color: #ff4dd8 !important; }
+    .neu { color: rgba(0, 0, 0, 0.5) !important; }
 
     .no-data { 
-      color: var(--text-muted); 
+      color: rgba(0, 0, 0, 0.5) !important; 
       font-style: italic; 
       text-align: center; 
       padding: 40px; 
@@ -465,9 +465,9 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      background: var(--primary-light);
-      color: var(--text-primary);
-      border: 1px solid rgba(34, 218, 174, 0.2);
+      background: rgba(34, 218, 174, 0.1) !important;
+      color: #000000 !important;
+      border: 1px solid rgba(34, 218, 174, 0.2) !important;
     } 500;
     }
 
@@ -1305,6 +1305,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const metricSelect = document.getElementById('metric');
       const teamSelect = document.getElementById('team');
+      const chartMonthSelect = document.getElementById('chartMonth');
       const refreshBtn = document.getElementById('refresh');
       const periodSelect = document.getElementById('periodSelect');
 
@@ -1315,6 +1316,10 @@
       
       if (teamSelect) teamSelect.addEventListener('change', () => {
         renderBoard(); 
+        renderChart();
+      });
+
+      if (chartMonthSelect) chartMonthSelect.addEventListener('change', () => {
         renderChart();
       });
       
