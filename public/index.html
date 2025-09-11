@@ -283,7 +283,7 @@
     </main>
   </div>
 
-  <script>
+<script>
     const API_BASE = '/api';
     let EMPLOYEES = [];
     let MONTHLY_WINNERS = [];
@@ -296,18 +296,26 @@
     const safeStr = (s) => (s == null ? '' : String(s));
 
     function setLoading(on) {
-      document.getElementById('loading').style.display = on ? 'block' : 'none';
-      document.getElementById('main').style.display = on ? 'none' : 'block';
-      document.getElementById('refresh').disabled = on;
+      const loading = document.getElementById('loading');
+      const main = document.getElementById('main');
+      const refresh = document.getElementById('refresh');
+      
+      if (loading) loading.style.display = on ? 'block' : 'none';
+      if (main) main.style.display = on ? 'none' : 'block';
+      if (refresh) refresh.disabled = on;
     }
 
     function showError(msg) {
       const box = document.getElementById('error');
-      box.textContent = msg;
-      box.style.display = 'block';
+      if (box) {
+        box.textContent = msg;
+        box.style.display = 'block';
+      }
     }
+
     function hideError() {
-      document.getElementById('error').style.display = 'none';
+      const box = document.getElementById('error');
+      if (box) box.style.display = 'none';
     }
 
     // ---------- Data fetch + normalization ----------
@@ -323,9 +331,12 @@
         MONTHLY_WINNERS = Array.isArray(data.monthlyWinners) ? data.monthlyWinners : [];
         SUMMARY = data.summary || {};
 
+        console.log('Loaded employees:', EMPLOYEES.length);
+        console.log('Sample employee:', EMPLOYEES[0]);
+
         renderAll();
       } catch (err) {
-        console.error(err);
+        console.error('Fetch error:', err);
         showError(`Failed to load data: ${err.message}`);
       } finally {
         setLoading(false);
@@ -344,19 +355,28 @@
 
     function renderLastUpdated() {
       const el = document.getElementById('lastUpdated');
-      const ts = SUMMARY.lastUpdated ? new Date(SUMMARY.lastUpdated) : null;
-      el.textContent = ts ? `Last updated: ${ts.toLocaleString()}` : '';
+      if (el) {
+        const ts = SUMMARY.lastUpdated ? new Date(SUMMARY.lastUpdated) : null;
+        el.textContent = ts ? `Last updated: ${ts.toLocaleString()}` : '';
+      }
     }
 
     function renderStats() {
-      document.getElementById('statTotal').textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
-      document.getElementById('statAvgGrowth').textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
-      document.getElementById('statTopGrower').textContent = safeStr(SUMMARY.topGrower || '—');
-      document.getElementById('statTotalFollowers').textContent = fmtInt(SUMMARY.totalFollowers || 0);
+      const statTotal = document.getElementById('statTotal');
+      const statAvgGrowth = document.getElementById('statAvgGrowth');
+      const statTopGrower = document.getElementById('statTopGrower');
+      const statTotalFollowers = document.getElementById('statTotalFollowers');
+
+      if (statTotal) statTotal.textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
+      if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
+      if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
+      if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
     }
 
     function populateTeamFilter() {
       const sel = document.getElementById('team');
+      if (!sel) return;
+      
       while (sel.children.length > 1) sel.removeChild(sel.lastChild);
 
       const lines = [...new Set(EMPLOYEES.map(e => e.businessLine).filter(Boolean))].sort();
@@ -370,6 +390,8 @@
 
     function populatePeriodSelector() {
       const select = document.getElementById('periodSelect');
+      if (!select) return;
+      
       select.innerHTML = '<option value="">Select a month...</option>';
       
       MONTHLY_WINNERS.forEach((winner, index) => {
@@ -381,7 +403,9 @@
       });
       
       const section = document.getElementById('monthlyWinnerSection');
-      section.style.display = MONTHLY_WINNERS.length > 0 ? 'block' : 'none';
+      if (section) {
+        section.style.display = MONTHLY_WINNERS.length > 0 ? 'block' : 'none';
+      }
       
       if (MONTHLY_WINNERS.length > 0) {
         showMonthlyWinner(MONTHLY_WINNERS[0]);
@@ -393,18 +417,20 @@
       const teamEl = document.getElementById('winnerTeam');
       const growthEl = document.getElementById('winnerGrowth');
       
-      if (winnerData.winner.linkedinProfile) {
-        nameEl.innerHTML = `<a href="${winnerData.winner.linkedinProfile}" target="_blank" rel="noopener noreferrer">${winnerData.winner.name}</a>`;
-      } else {
-        nameEl.textContent = winnerData.winner.name;
+      if (nameEl) {
+        if (winnerData.winner.linkedinProfile) {
+          nameEl.innerHTML = `<a href="${winnerData.winner.linkedinProfile}" target="_blank" rel="noopener noreferrer">${winnerData.winner.name}</a>`;
+        } else {
+          nameEl.textContent = winnerData.winner.name;
+        }
       }
       
-      teamEl.textContent = winnerData.winner.businessLine || 'Unassigned';
-      growthEl.textContent = `+${fmtInt(winnerData.winner.monthlyGrowth)}`;
+      if (teamEl) teamEl.textContent = winnerData.winner.businessLine || 'Unassigned';
+      if (growthEl) growthEl.textContent = `+${fmtInt(winnerData.winner.monthlyGrowth)}`;
     }
 
     function getFilteredEmployees() {
-      const teamVal = document.getElementById('team').value;
+      const teamVal = document.getElementById('team')?.value || 'all';
       const list = (teamVal === 'all')
         ? EMPLOYEES
         : EMPLOYEES.filter(e => (e.businessLine || '').toLowerCase().includes(teamVal));
@@ -421,15 +447,20 @@
       }
       const latest = employee.monthlyMetrics[employee.monthlyMetrics.length - 1];
       return {
-        currentFollowers: latest.currentFollowers,
-        monthlyGrowth: latest.monthlyGrowth,
-        monthlyGrowthRate: latest.monthlyGrowthRate
+        currentFollowers: latest.currentFollowers || 0,
+        monthlyGrowth: latest.monthlyGrowth || 0,
+        monthlyGrowthRate: latest.monthlyGrowthRate || 0
       };
     }
 
     function renderBoard() {
-      const metric = document.getElementById('metric').value;
+      const metric = document.getElementById('metric')?.value || 'monthlyGrowth';
       const board = document.getElementById('board');
+      const boardTitle = document.getElementById('boardTitle');
+      const metricHeader = document.getElementById('metricHeader');
+      
+      if (!board) return;
+
       const headerMap = {
         monthlyGrowth: { title: 'Monthly Growth Leaderboard', header: 'Monthly Growth' },
         monthlyGrowthRate: { title: 'Monthly Growth % Leaderboard', header: 'Growth %' },
@@ -437,8 +468,8 @@
         overallGrowthRate: { title: 'Overall Growth % Leaderboard', header: 'Overall Growth %' }
       };
       
-      document.getElementById('boardTitle').textContent = headerMap[metric].title;
-      document.getElementById('metricHeader').textContent = headerMap[metric].header;
+      if (boardTitle) boardTitle.textContent = headerMap[metric].title;
+      if (metricHeader) metricHeader.textContent = headerMap[metric].header;
 
       let rows = getFilteredEmployees();
       
@@ -471,54 +502,55 @@
       }
 
       const html = rows.map((e, i) => {
-  const rankClass = i < 3 ? ` rank-${i + 1}` : '';
-  const monthlyMetric = getLatestMonthlyMetric(e);
-  
-  let val, display;
-  if (metric === 'monthlyGrowth') {
-    val = monthlyMetric.monthlyGrowth;
-    display = fmtInt(val);
-  } else if (metric === 'monthlyGrowthRate') {
-    val = monthlyMetric.monthlyGrowthRate;
-    display = fmtPct(val);
-  } else if (metric === 'currentFollowers') {
-    val = monthlyMetric.currentFollowers;
-    display = fmtInt(val);
-  } else if (metric === 'overallGrowthRate') {
-    val = e.metrics?.growthRate ?? 0;
-    display = fmtPct(val);
-  }
-  
-  const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
-  
-  const followerCount = fmtInt(monthlyMetric.currentFollowers);
-  const absoluteGrowth = monthlyMetric.monthlyGrowth;
-  const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
-  const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
+        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        const monthlyMetric = getLatestMonthlyMetric(e);
+        
+        let val, display;
+        if (metric === 'monthlyGrowth') {
+          val = monthlyMetric.monthlyGrowth;
+          display = fmtInt(val);
+        } else if (metric === 'monthlyGrowthRate') {
+          val = monthlyMetric.monthlyGrowthRate;
+          display = fmtPct(val);
+        } else if (metric === 'currentFollowers') {
+          val = monthlyMetric.currentFollowers;
+          display = fmtInt(val);
+        } else if (metric === 'overallGrowthRate') {
+          val = e.metrics?.growthRate ?? 0;
+          display = fmtPct(val);
+        }
+        
+        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
+        
+        const followerCount = fmtInt(monthlyMetric.currentFollowers);
+        const absoluteGrowth = monthlyMetric.monthlyGrowth;
+        const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
+        const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
 
-  const nameHtml = e.linkedinProfile
-    ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
-    : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
+        const nameHtml = e.linkedinProfile
+          ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
+          : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
 
-  return `
-    <div class="row${rankClass}">
-      <div class="rank">${i + 1}</div>
-      <div class="name">
-        ${nameHtml}
-        <div class="subtle">${safeStr(e.businessLine || 'Unassigned')}</div>
-      </div>
-      <div class="metric ${valCls}">${display}</div>
-      <div class="metric">${followerCount}</div>
-      <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
-    </div>
-  `;
-}).join('');
+        return `
+          <div class="row${rankClass}">
+            <div class="rank">${i + 1}</div>
+            <div class="name">
+              ${nameHtml}
+              <div class="subtle">${safeStr(e.businessLine || 'Unassigned')}</div>
+            </div>
+            <div class="metric ${valCls}">${display}</div>
+            <div class="metric">${followerCount}</div>
+            <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
+          </div>
+        `;
+      }).join('');
 
       board.innerHTML = html;
     }
 
     function renderChart() {
-      const ctx = document.getElementById('chart').getContext('2d');
+      const ctx = document.getElementById('chart')?.getContext('2d');
+      if (!ctx) return;
 
       // Get top 10 by overall growth rate for chart
       const top10 = getFilteredEmployees()
@@ -570,27 +602,32 @@
     }
 
     // ---------- Events ----------
-    document.getElementById('metric').addEventListener('change', () => {
-      renderBoard(); renderChart();
-    });
-    document.getElementById('team').addEventListener('change', () => {
-      renderBoard(); renderChart();
-    });
-    document.getElementById('refresh').addEventListener('click', fetchData);
-
-    document.getElementById('periodSelect').addEventListener('change', (e) => {
-      const selectedMonth = e.target.value;
-      const winnerData = MONTHLY_WINNERS.find(w => w.monthKey === selectedMonth);
-      if (winnerData) {
-        showMonthlyWinner(winnerData);
-      }
-    });
-
-    // ---------- Init ----------
     document.addEventListener('DOMContentLoaded', () => {
+      const metricSelect = document.getElementById('metric');
+      const teamSelect = document.getElementById('team');
+      const refreshBtn = document.getElementById('refresh');
+      const periodSelect = document.getElementById('periodSelect');
+
+      if (metricSelect) metricSelect.addEventListener('change', () => {
+        renderBoard(); renderChart();
+      });
+      
+      if (teamSelect) teamSelect.addEventListener('change', () => {
+        renderBoard(); renderChart();
+      });
+      
+      if (refreshBtn) refreshBtn.addEventListener('click', fetchData);
+
+      if (periodSelect) periodSelect.addEventListener('change', (e) => {
+        const selectedMonth = e.target.value;
+        const winnerData = MONTHLY_WINNERS.find(w => w.monthKey === selectedMonth);
+        if (winnerData) {
+          showMonthlyWinner(winnerData);
+        }
+      });
+
+      // Initialize
       fetchData();
       setInterval(fetchData, 5 * 60 * 1000);
     });
-  </script>
-</body>
-</html>
+</script>
