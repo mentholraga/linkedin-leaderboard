@@ -471,48 +471,48 @@
       }
 
       const html = rows.map((e, i) => {
-        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
-        const monthlyMetric = getLatestMonthlyMetric(e);
-        
-        let val, display;
-        if (metric === 'monthlyGrowth') {
-          val = monthlyMetric.monthlyGrowth;
-          display = fmtInt(val);
-        } else if (metric === 'monthlyGrowthRate') {
-          val = monthlyMetric.monthlyGrowthRate;
-          display = fmtPct(val);
-        } else if (metric === 'currentFollowers') {
-          val = monthlyMetric.currentFollowers;
-          display = fmtInt(val);
-        } else if (metric === 'overallGrowthRate') {
-          val = e.metrics?.growthRate ?? 0;
-          display = fmtPct(val);
-        }
-        
-        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
-        
-        const followerCount = fmtInt(monthlyMetric.currentFollowers);
-        const absoluteGrowth = monthlyMetric.monthlyGrowth;
-        const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
-        const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
+  const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+  const monthlyMetric = getLatestMonthlyMetric(e);
+  
+  let val, display;
+  if (metric === 'monthlyGrowth') {
+    val = monthlyMetric.monthlyGrowth;
+    display = fmtInt(val);
+  } else if (metric === 'monthlyGrowthRate') {
+    val = monthlyMetric.monthlyGrowthRate;
+    display = fmtPct(val);
+  } else if (metric === 'currentFollowers') {
+    val = monthlyMetric.currentFollowers;
+    display = fmtInt(val);
+  } else if (metric === 'overallGrowthRate') {
+    val = e.metrics?.growthRate ?? 0;
+    display = fmtPct(val);
+  }
+  
+  const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
+  
+  const followerCount = fmtInt(monthlyMetric.currentFollowers);
+  const absoluteGrowth = monthlyMetric.monthlyGrowth;
+  const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
+  const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
 
-        const nameHtml = e.linkedinProfile
-          ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
-          : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
+  const nameHtml = e.linkedinProfile
+    ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
+    : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
 
-        return `
-          <div class="row${rankClass}">
-            <div class="rank">${i + 1}</div>
-            <div class="name">
-              ${nameHtml}
-              <div class="subtle">${safeStr(e.businessLine || 'Unassigned')}</div>
-            </div>
-            <div class="metric ${valCls}">${display}</div>
-            <div class="metric">${followerCount}</div>
-            <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
-          </div>
-        `;
-      }).join('');
+  return `
+    <div class="row${rankClass}">
+      <div class="rank">${i + 1}</div>
+      <div class="name">
+        ${nameHtml}
+        <div class="subtle">${safeStr(e.businessLine || 'Unassigned')}</div>
+      </div>
+      <div class="metric ${valCls}">${display}</div>
+      <div class="metric">${followerCount}</div>
+      <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
+    </div>
+  `;
+}).join('');
 
       board.innerHTML = html;
     }
