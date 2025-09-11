@@ -514,18 +514,28 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const [employeeSheet, bizLineSheet] = await Promise.all([
-      getEmployeesSheet(),
-      getBizLineSheet().catch(err => {
-        console.warn('Could not fetch business line sheet:', err.message);
-        return null;
-      })
-    ]);
+    console.log('Fetching employee data...');
+    const employeeSheet = await getEmployeesSheet();
+    console.log('Employee sheet fetched successfully');
     
+    let bizLineSheet = null;
+    try {
+      console.log('Fetching business line data...');
+      bizLineSheet = await getBizLineSheet();
+      console.log('Business line sheet fetched:', bizLineSheet ? 'success' : 'failed');
+    } catch (bizError) {
+      console.warn('Business line sheet fetch failed:', bizError.message);
+    }
+    
+    console.log('Building payload...');
     const payload = buildEmployeesPayload(employeeSheet, bizLineSheet);
+    console.log('Payload built successfully');
+    console.log(`Found ${payload.employees.length} employees and ${payload.businessLines.length} business lines`);
+    
     return res.status(200).json(payload);
   } catch (error) {
     console.error('[employees API] Error:', error);
+    console.error('Stack trace:', error.stack);
     return res.status(500).json({
       error: 'Failed to fetch employee data',
       code: error?.code || 'INTERNAL_ERROR',
