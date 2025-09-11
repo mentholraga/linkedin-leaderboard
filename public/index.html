@@ -780,32 +780,13 @@
       const statTopGrowerLabel = document.getElementById('statTopGrowerLabel');
       const statTotalFollowers = document.getElementById('statTotalFollowers');
 
-      if (currentView === 'employee') {
-        if (statTotal) statTotal.textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
-        if (statTotalLabel) statTotalLabel.textContent = 'Active Employees';
-        if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
-        if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
-        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
-        if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
-      } else {
-        if (statTotal) statTotal.textContent = fmtInt(BUSINESS_LINES.length || 0);
-        if (statTotalLabel) statTotalLabel.textContent = 'Business Lines';
-        if (statAvgGrowth) {
-          const avgBizGrowth = BUSINESS_LINES.length > 0 ? 
-            BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.growthRate || 0), 0) / BUSINESS_LINES.length : 0;
-          statAvgGrowth.textContent = fmtPct(avgBizGrowth);
-        }
-        if (statTopGrower) {
-          const topBizLine = BUSINESS_LINES.reduce((best, bl) => 
-            (bl.metrics?.growthRate || 0) > (best?.metrics?.growthRate || -Infinity) ? bl : best, null);
-          statTopGrower.textContent = topBizLine ? topBizLine.name : '—';
-        }
-        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Business Line';
-        if (statTotalFollowers) {
-          const totalBizFollowers = BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.currentFollowers || 0), 0);
-          statTotalFollowers.textContent = fmtInt(totalBizFollowers);
-        }
-      }
+      // Only show employee stats for now (until business lines are implemented)
+      if (statTotal) statTotal.textContent = fmtInt(SUMMARY.totalEmployees || EMPLOYEES.length || 0);
+      if (statTotalLabel) statTotalLabel.textContent = 'Active Employees';
+      if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
+      if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
+      if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
+      if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
     }
 
     function populateTeamFilter() {
