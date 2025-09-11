@@ -4,39 +4,414 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>LinkedIn Growth Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       min-height: 100vh;
       background: #ffffff;
       color: #000000;
-      margin: 0;
-      padding: 24px;
+      line-height: 1.6;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
+
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      padding: 24px; 
+    }
+
     .header {
       background: #ffffff;
       border: 1px solid #e5e7eb;
+      color: #000000;
       padding: 32px;
       margin-bottom: 32px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    .loading {
+
+    .header h1 { 
+      font-size: 32px; 
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #22daae, #ff4dd8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p { 
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .last-updated { 
+      font-size: 14px; 
+      color: rgba(0, 0, 0, 0.5);
+      margin-top: 12px; 
+      font-weight: 400;
+    }
+
+    /* View Toggle */
+    .view-toggle {
+      display: flex;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    .toggle-option {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.7);
+      transition: all 0.2s ease;
+    }
+
+    .toggle-option.active {
+      background: linear-gradient(135deg, #22daae, rgba(34, 218, 174, 0.8));
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(34, 218, 174, 0.3);
+    }
+
+    .toggle-option:hover:not(.active) {
+      background: rgba(34, 218, 174, 0.1);
+      color: #000000;
+    }
+
+    /* Controls */
+    .controls {
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; 
+      margin-bottom: 24px;
+    }
+
+    .control {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    .control label { 
+      display: block;
+      font-weight: 600; 
+      margin-bottom: 8px;
+      color: #000000;
+      font-size: 14px;
+    }
+
+    select, button {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px 16px; 
+      font-weight: 500; 
+      font-size: 14px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    select { 
+      background: #ffffff; 
+      color: #000000;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #22daae;
+      box-shadow: 0 0 0 3px rgba(34, 218, 174, 0.1);
+    }
+
+    button { 
+      background: linear-gradient(135deg, #ff4dd8, rgba(255, 77, 216, 0.8));
+      color: #ffffff; 
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+    }
+
+    button:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 77, 216, 0.3);
+    }
+
+    button:disabled { 
+      opacity: 0.6; 
+      cursor: not-allowed; 
+      transform: none; 
+    }
+
+    /* Error and loading states */
+    .error {
+      display: none; 
+      background: #ff4dd8; 
+      color: #ffffff;
+      padding: 12px 16px; 
+      border-radius: 6px; 
+      margin-bottom: 16px; 
       text-align: center;
-      padding: 40px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #ff4dd8;
+    }
+
+    .loading { 
+      color: rgba(0, 0, 0, 0.5); 
+      text-align: center; 
+      padding: 40px; 
+      font-size: 16px; 
+    }
+
+    /* Stats grid */
+    .stats {
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; 
+      margin-bottom: 24px;
+    }
+
+    .stat {
+      background: #ffffff; 
+      padding: 24px; 
+      border-radius: 6px;
+      text-align: center; 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat .num { 
+      font-size: 28px; 
+      font-weight: 800; 
+      color: #22daae;
+      margin-bottom: 4px;
+    }
+
+    .stat .lbl { 
+      color: rgba(0, 0, 0, 0.5); 
+      font-size: 13px; 
+      font-weight: 500;
+    }
+
+    /* Panel styles */
+    .panel {
+      background: #ffffff; 
+      border-radius: 12px; 
+      padding: 24px; 
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      margin-bottom: 24px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .panel h2 { 
+      font-size: 20px; 
+      margin-bottom: 20px; 
+      font-weight: 600;
+      color: #000000;
+    }
+
+    /* Leaderboard table styles */
+    .leaderboard-header, .row {
+      display: grid; 
+      align-items: center; 
+      gap: 16px;
+      padding: 16px 20px;
+    }
+
+    .employee-view .leaderboard-header, .employee-view .row {
+      grid-template-columns: 56px 1fr 120px 120px 120px;
+    }
+
+    .business-line-view .leaderboard-header, .business-line-view .row {
+      grid-template-columns: 56px 1fr 100px 120px 120px 120px;
+    }
+
+    .leaderboard-header {
+      color: rgba(0, 0, 0, 0.5); 
+      font-weight: 700; 
+      border-bottom: 2px solid rgba(34, 218, 174, 0.1);
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    .row {
+      border-radius: 6px; 
+      transition: all 0.2s ease;
+      border-left: 4px solid transparent; 
+      margin-bottom: 8px;
+      border: 1px solid #f3f4f6;
+    }
+
+    .row:hover { 
+      background: rgba(34, 218, 174, 0.1); 
+      transform: translateX(4px); 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-color: #22daae;
+    }
+
+    .row.rank-1 { 
+      background: linear-gradient(45deg, rgba(34, 218, 174, 0.1), rgba(34, 218, 174, 0.05)); 
+      border-left-color: #22daae; 
+    }
+
+    .row.rank-2 { 
+      background: linear-gradient(45deg, rgba(255, 77, 216, 0.1), rgba(255, 77, 216, 0.05)); 
+      border-left-color: #ff4dd8; 
+    }
+
+    .row.rank-3 { 
+      background: linear-gradient(45deg, rgba(255, 169, 1, 0.1), rgba(255, 169, 1, 0.05)); 
+      border-left-color: #ffa901; 
+    }
+
+    .rank {
+      width: 40px; 
+      height: 40px; 
+      border-radius: 50%; 
+      background: #f8f9fa;
+      color: rgba(0, 0, 0, 0.7); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-weight: 800; 
+      font-size: 18px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .row.rank-1 .rank { 
+      color: #ffffff; 
+      background: #22daae;
+      border-color: #22daae;
+    }
+
+    .row.rank-2 .rank { 
+      color: #ffffff; 
+      background: #ff4dd8;
+      border-color: #ff4dd8;
+    }
+
+    .row.rank-3 .rank { 
+      color: #ffffff; 
+      background: #ffa901;
+      border-color: #ffa901;
+    }
+
+    .name a, .name div { 
+      font-weight: 700; 
+      color: #000000; 
+      text-decoration: none; 
+    }
+
+    .name a:hover { 
+      color: #22daae; 
+      text-decoration: underline; 
+    }
+
+    .subtle { 
+      color: rgba(0, 0, 0, 0.5); 
+      font-size: 13px; 
+      margin-top: 2px; 
+      font-weight: 500;
+    }
+
+    .metric { 
+      text-align: center; 
+      font-weight: 800; 
+    }
+
+    .pos { color: #22daae; }
+    .neg { color: #ff4dd8; }
+    .neu { color: rgba(0, 0, 0, 0.5); }
+
+    .no-data { 
+      color: rgba(0, 0, 0, 0.5); 
+      font-style: italic; 
+      text-align: center; 
+      padding: 40px; 
       font-size: 16px;
     }
-    .error {
-      display: none;
-      background: #ff4dd8;
-      color: white;
-      padding: 12px;
+
+    /* Badge styles for business lines */
+    .business-line-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(34, 218, 174, 0.1);
+      color: #000000;
+      border: 1px solid rgba(34, 218, 174, 0.2);
+    }
+
+    /* Chart styles */
+    .chart-section {
+      padding: 24px;
+      border-top: 1px solid #e5e7eb;
+      background: #f8f9fa;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      background: #ffffff;
       border-radius: 6px;
-      margin-bottom: 16px;
-      text-align: center;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+      
+      .header {
+        padding: 24px 20px;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+      
+      .controls {
+        grid-template-columns: 1fr;
+      }
+      
+      .view-toggle {
+        flex-direction: column;
+      }
+      
+      .leaderboard-header, .row { 
+        grid-template-columns: 50px 1fr 110px; 
+      }
+      
+      .leaderboard-header > :nth-child(n+4), .row > :nth-child(n+4) { 
+        display: none; 
+      }
     }
   </style>
 </head>
@@ -45,59 +420,728 @@
     <header class="header">
       <h1>LinkedIn Growth Leaderboard</h1>
       <p>Track individual and business line LinkedIn network growth performance</p>
-      <div id="lastUpdated"></div>
+      <div class="last-updated" id="lastUpdated"></div>
     </header>
 
     <div id="error" class="error"></div>
-    <div id="loading" class="loading">Loading leaderboard data…</div>
-    <div id="main" style="display:none">
-      <p>Data loaded successfully!</p>
-      <div id="debug"></div>
+
+    <!-- View Toggle -->
+    <div class="view-toggle">
+      <button class="toggle-option active" id="employeeView" onclick="switchView('employee')">
+        Individual Employees
+      </button>
+      <button class="toggle-option" id="businessLineView" onclick="switchView('businessLine')">
+        Business Lines
+      </button>
     </div>
+
+    <section class="controls">
+      <div class="control">
+        <label for="metric">Sort by</label>
+        <select id="metric">
+          <option value="monthlyGrowth">Monthly Growth (Followers)</option>
+          <option value="monthlyGrowthRate">Monthly Growth %</option>
+          <option value="currentFollowers">Follower Count</option>
+          <option value="overallGrowthRate">Overall Growth %</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="team">Business Line</label>
+        <select id="team">
+          <option value="all">All Teams</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="chartMonth">Chart Month Filter</label>
+        <select id="chartMonth">
+          <option value="all">All Months (Trend)</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <button id="refresh">Refresh Data</button>
+      </div>
+    </section>
+
+    <div id="loading" class="loading">Loading leaderboard data…</div>
+
+    <main id="main" style="display:none">
+      <section class="stats">
+        <article class="stat">
+          <div class="num" id="statTotal">-</div>
+          <div class="lbl" id="statTotalLabel">Active Employees</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statAvgGrowth">-</div>
+          <div class="lbl">Avg Growth Rate</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statTopGrower">-</div>
+          <div class="lbl" id="statTopGrowerLabel">Top Grower</div>
+        </article>
+        <article class="stat">
+          <div class="num" id="statTotalFollowers">-</div>
+          <div class="lbl">Total Network</div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div id="leaderboardContainer" class="employee-view">
+          <div class="leaderboard-header">
+            <div>Rank</div>
+            <div>Employee</div>
+            <div id="metricHeader">Monthly Growth</div>
+            <div>Follower Count</div>
+            <div>Absolute Growth</div>
+          </div>
+          <div id="board"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="chart-section">
+          <h2 id="chartTitle">Top 10 Growth Trends</h2>
+          <div class="chart-container">
+            <canvas id="chart" width="400" height="220" aria-label="Growth trend lines" role="img"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
-    console.log('=== SCRIPT STARTED ===');
+    console.log('=== LINKEDIN LEADERBOARD SCRIPT STARTED ===');
     
-    // Test basic functionality
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('=== DOM LOADED ===');
+    const API_BASE = '/api';
+    let EMPLOYEES = [];
+    let BUSINESS_LINES = [];
+    let MONTHLY_WINNERS = [];
+    let SUMMARY = {};
+    let chart;
+    let currentView = 'employee';
+
+    // ---------- Utilities ----------
+    const fmtPct = (n) => `${Number(n || 0).toFixed(1)}%`;
+    const fmtInt = (n) => Number(n || 0).toLocaleString();
+    const safeStr = (s) => (s == null ? '' : String(s));
+
+    function setLoading(on) {
+      const loading = document.getElementById('loading');
+      const main = document.getElementById('main');
+      const refresh = document.getElementById('refresh');
       
-      const API_BASE = '/api';
+      if (loading) loading.style.display = on ? 'block' : 'none';
+      if (main) main.style.display = on ? 'none' : 'block';
+      if (refresh) refresh.disabled = on;
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error');
+      if (box) {
+        box.textContent = msg;
+        box.style.display = 'block';
+      }
+    }
+
+    function hideError() {
+      const box = document.getElementById('error');
+      if (box) box.style.display = 'none';
+    }
+
+    function switchView(view) {
+      currentView = view;
       
-      async function testFetch() {
-        console.log('=== TESTING FETCH ===');
-        try {
-          const response = await fetch(`${API_BASE}/employees`);
-          console.log('Response status:', response.status);
-          console.log('Response ok:', response.ok);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Data received:', data);
-            
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('main').style.display = 'block';
-            document.getElementById('debug').innerHTML = `
-              <h3>API Response:</h3>
-              <pre>${JSON.stringify(data, null, 2)}</pre>
-            `;
-          } else {
-            throw new Error(`HTTP ${response.status}`);
-          }
-        } catch (error) {
-          console.error('Fetch error:', error);
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('error').style.display = 'block';
-          document.getElementById('error').textContent = `Error: ${error.message}`;
-        }
+      // Update toggle buttons
+      document.getElementById('employeeView').classList.toggle('active', view === 'employee');
+      document.getElementById('businessLineView').classList.toggle('active', view === 'businessLine');
+      
+      // Update container class
+      const container = document.getElementById('leaderboardContainer');
+      if (container) {
+        container.className = view === 'employee' ? 'employee-view' : 'business-line-view';
       }
       
-      console.log('=== CALLING TEST FETCH ===');
-      testFetch();
+      renderAll();
+    }
+
+    // ---------- Data fetch + normalization ----------
+    async function fetchData() {
+      console.log('=== FETCHING DATA ===');
+      setLoading(true);
+      hideError();
+      
+      try {
+        const res = await fetch(`${API_BASE}/employees`, { 
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
+        
+        const data = await res.json();
+        console.log('Data received:', data);
+
+        // Use the working data structure from your API
+        EMPLOYEES = data.employees || [];
+        BUSINESS_LINES = data.businessLines || [];
+        MONTHLY_WINNERS = data.monthlyWinners || { employees: [], businessLines: [] };
+        SUMMARY = data.summary || {};
+
+        console.log('Processed:', {
+          employees: EMPLOYEES.length,
+          businessLines: BUSINESS_LINES.length,
+          summary: SUMMARY
+        });
+
+        renderAll();
+      } catch (err) {
+        console.error('Fetch error:', err);
+        showError(`Failed to load data: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // ---------- Rendering ----------
+    function renderAll() {
+      console.log('=== RENDERING ALL ===');
+      populateTeamFilter();
+      populateChartMonthFilter();
+      renderStats();
+      renderBoard();
+      renderChart();
+      renderLastUpdated();
+    }
+
+    function renderLastUpdated() {
+      const el = document.getElementById('lastUpdated');
+      if (el) {
+        const ts = SUMMARY.lastUpdated ? new Date(SUMMARY.lastUpdated) : null;
+        el.textContent = ts ? `Last updated: ${ts.toLocaleString()}` : '';
+      }
+    }
+
+    function renderStats() {
+      const statTotal = document.getElementById('statTotal');
+      const statTotalLabel = document.getElementById('statTotalLabel');
+      const statAvgGrowth = document.getElementById('statAvgGrowth');
+      const statTopGrower = document.getElementById('statTopGrower');
+      const statTopGrowerLabel = document.getElementById('statTopGrowerLabel');
+      const statTotalFollowers = document.getElementById('statTotalFollowers');
+
+      if (currentView === 'employee') {
+        if (statTotal) statTotal.textContent = fmtInt(EMPLOYEES.length);
+        if (statTotalLabel) statTotalLabel.textContent = 'Active Employees';
+        if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
+        if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
+        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
+        if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
+      } else {
+        if (statTotal) statTotal.textContent = fmtInt(BUSINESS_LINES.length);
+        if (statTotalLabel) statTotalLabel.textContent = 'Business Lines';
+        if (statAvgGrowth) {
+          const avgBizGrowth = BUSINESS_LINES.length > 0 ? 
+            BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.growthRate || 0), 0) / BUSINESS_LINES.length : 0;
+          statAvgGrowth.textContent = fmtPct(avgBizGrowth);
+        }
+        if (statTopGrower) {
+          const topBizLine = BUSINESS_LINES.reduce((best, bl) => 
+            (bl.metrics?.growthRate || 0) > (best?.metrics?.growthRate || -Infinity) ? bl : best, null);
+          statTopGrower.textContent = topBizLine ? topBizLine.name : '—';
+        }
+        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Business Line';
+        if (statTotalFollowers) {
+          const totalBizFollowers = BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.currentFollowers || 0), 0);
+          statTotalFollowers.textContent = fmtInt(totalBizFollowers);
+        }
+      }
+    }
+
+    function populateTeamFilter() {
+      const sel = document.getElementById('team');
+      if (!sel) return;
+      
+      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
+
+      if (currentView === 'employee') {
+        const lines = [...new Set(EMPLOYEES.map(e => e.businessLine).filter(Boolean))].sort();
+        lines.forEach(line => {
+          const opt = document.createElement('option');
+          opt.value = line.toLowerCase();
+          opt.textContent = line;
+          sel.appendChild(opt);
+        });
+      }
+    }
+
+    function populateChartMonthFilter() {
+      const sel = document.getElementById('chartMonth');
+      if (!sel) return;
+      
+      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
+
+      const allMonths = new Set();
+      
+      if (currentView === 'employee') {
+        EMPLOYEES.forEach(emp => {
+          if (emp.monthlyFollowers) {
+            Object.keys(emp.monthlyFollowers).forEach(monthKey => {
+              const monthData = emp.monthlyFollowers[monthKey];
+              allMonths.add(JSON.stringify({
+                key: monthKey,
+                display: monthData.displayName
+              }));
+            });
+          }
+        });
+      } else {
+        BUSINESS_LINES.forEach(bl => {
+          if (bl.monthlyFollowers) {
+            Object.keys(bl.monthlyFollowers).forEach(monthKey => {
+              const monthData = bl.monthlyFollowers[monthKey];
+              allMonths.add(JSON.stringify({
+                key: monthKey,
+                display: monthData.displayName
+              }));
+            });
+          }
+        });
+      }
+
+      const months = Array.from(allMonths)
+        .map(str => JSON.parse(str))
+        .sort((a, b) => a.key.localeCompare(b.key));
+
+      months.forEach(month => {
+        const opt = document.createElement('option');
+        opt.value = month.key;
+        opt.textContent = month.display;
+        sel.appendChild(opt);
+      });
+    }
+
+    function getFilteredEmployees() {
+      const teamVal = document.getElementById('team')?.value || 'all';
+      const list = (teamVal === 'all')
+        ? EMPLOYEES
+        : EMPLOYEES.filter(e => (e.businessLine || '').toLowerCase().includes(teamVal));
+      return [...list];
+    }
+
+    function getLatestMonthlyMetric(employee) {
+      if (!employee.monthlyMetrics || employee.monthlyMetrics.length === 0) {
+        return {
+          currentFollowers: employee.metrics?.currentFollowers || 0,
+          monthlyGrowth: 0,
+          monthlyGrowthRate: 0
+        };
+      }
+      const latest = employee.monthlyMetrics[employee.monthlyMetrics.length - 1];
+      return {
+        currentFollowers: latest.currentFollowers || 0,
+        monthlyGrowth: latest.monthlyGrowth || 0,
+        monthlyGrowthRate: latest.monthlyGrowthRate || 0
+      };
+    }
+
+    function renderBoard() {
+      const metric = document.getElementById('metric')?.value || 'monthlyGrowth';
+      const board = document.getElementById('board');
+      const metricHeader = document.getElementById('metricHeader');
+      
+      if (!board) return;
+
+      const headerMap = {
+        monthlyGrowth: 'Monthly Growth',
+        monthlyGrowthRate: 'Growth %',
+        currentFollowers: 'Followers',
+        overallGrowthRate: 'Overall Growth %'
+      };
+      
+      if (metricHeader) metricHeader.textContent = headerMap[metric];
+
+      if (currentView === 'employee') {
+        renderEmployeeBoard(metric, board);
+      } else {
+        renderBusinessLineBoard(metric, board);
+      }
+    }
+
+    function renderEmployeeBoard(metric, board) {
+      const container = document.getElementById('leaderboardContainer');
+      if (container) {
+        container.querySelector('.leaderboard-header').innerHTML = `
+          <div>Rank</div>
+          <div>Employee</div>
+          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
+          <div>Follower Count</div>
+          <div>Absolute Growth</div>
+        `;
+      }
+
+      let rows = getFilteredEmployees();
+      
+      if (metric === 'monthlyGrowth') {
+        rows = rows.sort((a, b) => {
+          const aMetric = getLatestMonthlyMetric(a);
+          const bMetric = getLatestMonthlyMetric(b);
+          return bMetric.monthlyGrowth - aMetric.monthlyGrowth;
+        });
+      } else if (metric === 'monthlyGrowthRate') {
+        rows = rows.sort((a, b) => {
+          const aMetric = getLatestMonthlyMetric(a);
+          const bMetric = getLatestMonthlyMetric(b);
+          return bMetric.monthlyGrowthRate - aMetric.monthlyGrowthRate;
+        });
+      } else if (metric === 'currentFollowers') {
+        rows = rows.sort((a, b) => {
+          const aMetric = getLatestMonthlyMetric(a);
+          const bMetric = getLatestMonthlyMetric(b);
+          return bMetric.currentFollowers - aMetric.currentFollowers;
+        });
+      } else if (metric === 'overallGrowthRate') {
+        rows = rows.sort((a, b) => (b.metrics?.growthRate ?? 0) - (a.metrics?.growthRate ?? 0));
+      }
+
+      if (!rows.length) {
+        board.innerHTML = '<div class="no-data">No employee data available.</div>';
+        return;
+      }
+
+      const html = rows.map((e, i) => {
+        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        const monthlyMetric = getLatestMonthlyMetric(e);
+        
+        let val, display;
+        if (metric === 'monthlyGrowth') {
+          val = monthlyMetric.monthlyGrowth;
+          display = fmtInt(val);
+        } else if (metric === 'monthlyGrowthRate') {
+          val = monthlyMetric.monthlyGrowthRate;
+          display = fmtPct(val);
+        } else if (metric === 'currentFollowers') {
+          val = monthlyMetric.currentFollowers;
+          display = fmtInt(val);
+        } else if (metric === 'overallGrowthRate') {
+          val = e.metrics?.growthRate ?? 0;
+          display = fmtPct(val);
+        }
+        
+        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
+        
+        const followerCount = fmtInt(monthlyMetric.currentFollowers);
+        const absoluteGrowth = monthlyMetric.monthlyGrowth;
+        const absoluteGrowthCls = absoluteGrowth >= 0 ? 'pos' : 'neg';
+        const absoluteGrowthStr = absoluteGrowth >= 0 ? `+${fmtInt(absoluteGrowth)}` : fmtInt(absoluteGrowth);
+
+        const nameHtml = e.linkedinProfile
+          ? `<a href="${e.linkedinProfile}" target="_blank" rel="noopener noreferrer">${safeStr(e.firstName)} ${safeStr(e.lastName)}</a>`
+          : `<div>${safeStr(e.firstName)} ${safeStr(e.lastName)}</div>`;
+
+        return `
+          <div class="row${rankClass}">
+            <div class="rank">${i + 1}</div>
+            <div class="name">
+              ${nameHtml}
+              <div class="subtle"><span class="business-line-badge">${safeStr(e.businessLine || 'Unassigned')}</span></div>
+            </div>
+            <div class="metric ${valCls}">${display}</div>
+            <div class="metric">${followerCount}</div>
+            <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
+          </div>
+        `;
+      }).join('');
+
+      board.innerHTML = html;
+    }
+
+    function renderBusinessLineBoard(metric, board) {
+      const container = document.getElementById('leaderboardContainer');
+      if (container) {
+        container.querySelector('.leaderboard-header').innerHTML = `
+          <div>Rank</div>
+          <div>Business Line</div>
+          <div>Employees</div>
+          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
+          <div>Total Followers</div>
+          <div>Avg per Employee</div>
+        `;
+      }
+
+      let rows = [...BUSINESS_LINES];
+      
+      if (metric === 'monthlyGrowth') {
+        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowth || 0) - (a.metrics?.monthlyGrowth || 0));
+      } else if (metric === 'monthlyGrowthRate') {
+        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowthRate || 0) - (a.metrics?.monthlyGrowthRate || 0));
+      } else if (metric === 'currentFollowers') {
+        rows = rows.sort((a, b) => (b.metrics?.currentFollowers || 0) - (a.metrics?.currentFollowers || 0));
+      } else if (metric === 'overallGrowthRate') {
+        rows = rows.sort((a, b) => (b.metrics?.growthRate || 0) - (a.metrics?.growthRate || 0));
+      }
+
+      if (!rows.length) {
+        board.innerHTML = '<div class="no-data">No business line data available.</div>';
+        return;
+      }
+
+      const html = rows.map((bl, i) => {
+        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        
+        let val, display;
+        if (metric === 'monthlyGrowth') {
+          val = bl.metrics?.monthlyGrowth || 0;
+          display = fmtInt(val);
+        } else if (metric === 'monthlyGrowthRate') {
+          val = bl.metrics?.monthlyGrowthRate || 0;
+          display = fmtPct(val);
+        } else if (metric === 'currentFollowers') {
+          val = bl.metrics?.currentFollowers || 0;
+          display = fmtInt(val);
+        } else if (metric === 'overallGrowthRate') {
+          val = bl.metrics?.growthRate || 0;
+          display = fmtPct(val);
+        }
+        
+        const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
+        const totalFollowers = fmtInt(bl.metrics?.currentFollowers || 0);
+        const avgPerEmployee = bl.employeeCount > 0 ? 
+          fmtInt(Math.round((bl.metrics?.currentFollowers || 0) / bl.employeeCount)) : '0';
+
+        return `
+          <div class="row${rankClass}">
+            <div class="rank">${i + 1}</div>
+            <div class="name">
+              <div>${safeStr(bl.name)}</div>
+              <div class="subtle">${bl.employeeCount} employees</div>
+            </div>
+            <div class="metric">${bl.employeeCount}</div>
+            <div class="metric ${valCls}">${display}</div>
+            <div class="metric">${totalFollowers}</div>
+            <div class="metric">${avgPerEmployee}</div>
+          </div>
+        `;
+      }).join('');
+
+      board.innerHTML = html;
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chart')?.getContext('2d');
+      if (!ctx) return;
+
+      const chartTitle = document.getElementById('chartTitle');
+      const selectedMonth = document.getElementById('chartMonth')?.value || 'all';
+      
+      if (chartTitle) {
+        if (selectedMonth === 'all') {
+          chartTitle.textContent = currentView === 'employee' ? 
+            'Top 10 Employee Growth Trends' : 
+            'Business Line Growth Trends';
+        } else {
+          const monthData = currentView === 'employee' ? 
+            EMPLOYEES.find(e => e.monthlyFollowers?.[selectedMonth])?.monthlyFollowers[selectedMonth] :
+            BUSINESS_LINES.find(bl => bl.monthlyFollowers?.[selectedMonth])?.monthlyFollowers[selectedMonth];
+          const monthName = monthData?.displayName || selectedMonth;
+          chartTitle.textContent = currentView === 'employee' ? 
+            `Employee Performance - ${monthName}` : 
+            `Business Line Performance - ${monthName}`;
+        }
+      }
+
+      if (chart) chart.destroy();
+
+      let datasets = [];
+      let labels = [];
+
+      if (selectedMonth === 'all') {
+        if (currentView === 'employee') {
+          const top10 = getFilteredEmployees()
+            .filter(e => typeof e.metrics?.growthRate === 'number')
+            .sort((a, b) => b.metrics.growthRate - a.metrics.growthRate)
+            .slice(0, 10);
+
+          const allMonths = new Set();
+          top10.forEach(e => {
+            if (e.monthlyFollowers) {
+              Object.keys(e.monthlyFollowers).forEach(monthKey => allMonths.add(monthKey));
+            }
+          });
+          labels = Array.from(allMonths).sort().map(monthKey => {
+            const monthData = top10.find(e => e.monthlyFollowers?.[monthKey]);
+            return monthData?.monthlyFollowers?.[monthKey]?.displayName || monthKey;
+          });
+
+          datasets = top10.map((e, index) => {
+            const colors = ['#22daae', '#ff4dd8', '#ffa901', '#6b7280'];
+            return {
+              label: `${safeStr(e.firstName)} ${safeStr(e.lastName)}`.trim(),
+              data: labels.map((_, labelIndex) => {
+                const sortedMonths = Array.from(allMonths).sort();
+                const monthKey = sortedMonths[labelIndex];
+                return e.monthlyFollowers?.[monthKey]?.followers ?? null;
+              }),
+              borderColor: colors[index % colors.length],
+              backgroundColor: colors[index % colors.length] + '20',
+              borderWidth: 3,
+              spanGaps: true,
+              tension: 0.3
+            };
+          });
+        } else {
+          const allMonths = new Set();
+          BUSINESS_LINES.forEach(bl => {
+            if (bl.monthlyFollowers) {
+              Object.keys(bl.monthlyFollowers).forEach(monthKey => allMonths.add(monthKey));
+            }
+          });
+          labels = Array.from(allMonths).sort().map(monthKey => {
+            const monthData = BUSINESS_LINES.find(bl => bl.monthlyFollowers?.[monthKey]);
+            return monthData?.monthlyFollowers?.[monthKey]?.displayName || monthKey;
+          });
+
+          datasets = BUSINESS_LINES.map((bl, index) => {
+            const colors = ['#22daae', '#ff4dd8', '#ffa901', '#6b7280'];
+            return {
+              label: bl.name,
+              data: labels.map((_, labelIndex) => {
+                const sortedMonths = Array.from(allMonths).sort();
+                const monthKey = sortedMonths[labelIndex];
+                return bl.monthlyFollowers?.[monthKey]?.followers ?? null;
+              }),
+              borderColor: colors[index % colors.length],
+              backgroundColor: colors[index % colors.length] + '20',
+              borderWidth: 3,
+              spanGaps: true,
+              tension: 0.3
+            };
+          });
+        }
+      } else {
+        if (currentView === 'employee') {
+          const employeesWithData = getFilteredEmployees()
+            .filter(e => e.monthlyFollowers?.[selectedMonth])
+            .sort((a, b) => (b.monthlyFollowers[selectedMonth]?.followers || 0) - (a.monthlyFollowers[selectedMonth]?.followers || 0))
+            .slice(0, 15);
+
+          labels = employeesWithData.map(e => `${safeStr(e.firstName)} ${safeStr(e.lastName)}`.trim());
+          
+          datasets = [{
+            label: 'Followers',
+            data: employeesWithData.map(e => e.monthlyFollowers[selectedMonth]?.followers || 0),
+            backgroundColor: employeesWithData.map((_, index) => {
+              const colors = ['#22daae', '#ff4dd8', '#ffa901'];
+              return index < 3 ? colors[index] : '#6b7280';
+            }),
+            borderColor: employeesWithData.map((_, index) => {
+              const colors = ['#22daae', '#ff4dd8', '#ffa901'];
+              return index < 3 ? colors[index] : '#6b7280';
+            }),
+            borderWidth: 2
+          }];
+        } else {
+          const businessLinesWithData = BUSINESS_LINES
+            .filter(bl => bl.monthlyFollowers?.[selectedMonth])
+            .sort((a, b) => (b.monthlyFollowers[selectedMonth]?.followers || 0) - (a.monthlyFollowers[selectedMonth]?.followers || 0));
+
+          labels = businessLinesWithData.map(bl => bl.name);
+          
+          datasets = [{
+            label: 'Total Followers',
+            data: businessLinesWithData.map(bl => bl.monthlyFollowers[selectedMonth]?.followers || 0),
+            backgroundColor: businessLinesWithData.map((_, index) => {
+              const colors = ['#22daae', '#ff4dd8', '#ffa901'];
+              return index < 3 ? colors[index] : '#6b7280';
+            }),
+            borderColor: businessLinesWithData.map((_, index) => {
+              const colors = ['#22daae', '#ff4dd8', '#ffa901'];
+              return index < 3 ? colors[index] : '#6b7280';
+            }),
+            borderWidth: 2
+          }];
+        }
+      }
+
+      if (!labels.length || !datasets.length) return;
+
+      chart = new Chart(ctx, {
+        type: selectedMonth === 'all' ? 'line' : 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              display: selectedMonth === 'all', 
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                padding: 20,
+                font: { family: 'Inter', size: 12, weight: '500' },
+                color: '#000000'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: '#22daae',
+              borderWidth: 1,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: selectedMonth !== 'all',
+              title: { display: true, text: 'Followers', color: '#000000' },
+              grid: { color: 'rgba(0, 0, 0, 0.1)' },
+              ticks: { color: 'rgba(0, 0, 0, 0.7)' }
+            },
+            x: { 
+              title: { 
+                display: true, 
+                text: selectedMonth === 'all' ? 'Month' : (currentView === 'employee' ? 'Employee' : 'Business Line'),
+                color: '#000000'
+              },
+              grid: { color: 'rgba(0, 0, 0, 0.1)' },
+              ticks: { 
+                color: 'rgba(0, 0, 0, 0.7)',
+                maxRotation: selectedMonth === 'all' ? 0 : 45
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ---------- Events ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('=== INITIALIZING LEADERBOARD ===');
+      
+      const metricSelect = document.getElementById('metric');
+      const teamSelect = document.getElementById('team');
+      const chartMonthSelect = document.getElementById('chartMonth');
+      const refreshBtn = document.getElementById('refresh');
+
+      if (metricSelect) metricSelect.addEventListener('change', () => {
+        renderBoard(); 
+        renderChart();
+      });
+      
+      if (teamSelect) teamSelect.addEventListener('change', () => {
+        renderBoard(); 
+        renderChart();
+      });
+
+      if (chartMonthSelect) chartMonthSelect.addEventListener('change', () => {
+        renderChart();
+      });
+      
+      if (refreshBtn) refreshBtn.addEventListener('click', fetchData);
+
+      // Initialize
+      fetchData();
+      setInterval(fetchData, 5 * 60 * 1000);
     });
-    
-    console.log('=== SCRIPT LOADED ===');
   </script>
 </body>
 </html>
