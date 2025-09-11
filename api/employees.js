@@ -193,151 +193,152 @@ function calculateMonthlyWinners(employees) {
 
 // --------------------------- Business Line Processing ---------------------------
 
-function parseBizLineData(bizLineSheet) {
+function parseBizLineData(rawValues) {
   const businessLines = [];
   
-  // Convert sheet to JSON array
-  const jsonData = [];
-  const range = bizLineSheet['!ref'];
-  if (!range) return businessLines;
-  
-  const decoded = require('xlsx').utils.decode_range(range);
-  for (let row = decoded.s.r; row <= decoded.e.r; row++) {
-    const rowData = [];
-    for (let col = decoded.s.c; col <= decoded.e.c; col++) {
-      const cellAddr = require('xlsx').utils.encode_cell({r: row, c: col});
-      const cell = bizLineSheet[cellAddr];
-      rowData.push(cell ? cell.v : null);
-    }
-    jsonData.push(rowData);
-  }
+  try {
+    if (!rawValues || !rawValues.length) return businessLines;
 
-  // Find business line totals
-  const totalRows = [];
-  let currentBusinessLine = null;
+    // Find business line totals
+    const totalRows = [];
+    let currentBusinessLine = null;
 
-  for (let i = 0; i < jsonData.length; i++) {
-    const row = jsonData[i];
-    if (!row) continue;
-    
-    const firstCol = row[0] ? String(row[0]).trim() : '';
-    const secondCol = row[1] ? String(row[1]).trim() : '';
-    
-    // Track current business line
-    const businessLineKeywords = [
-      'CUSTOMER', 'MARKETING', 'FINANCE & PEOPLE', 'PRODUCT', 'REVENUE'
-    ];
-    
-    if (businessLineKeywords.some(keyword => firstCol.toUpperCase().includes(keyword))) {
-      currentBusinessLine = firstCol.toUpperCase();
-    }
-    
-    // Look for total rows
-    if (secondCol.toLowerCase() === 'total' && typeof row[3] === 'number') {
-      // Map the data to months (starting from March which is column 3)
-      const monthlyFollowers = {};
-      const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    for (let i = 0; i < rawValues.length; i++) {
+      const row = rawValues[i];
+      if (!row) continue;
       
-      for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
-        const value = row[3 + monthIndex]; // Start from column D (index 3)
-        if (typeof value === 'number') {
-          const monthKey = `2025-${String(months.indexOf(months[monthIndex]) + 3).padStart(2, '0')}`;
-          monthlyFollowers[monthKey] = {
-            followers: value,
-            month: months[monthIndex],
-            year: 2025,
-            displayName: `${months[monthIndex].charAt(0).toUpperCase() + months[monthIndex].slice(1)} 2025`
-          };
+      const firstCol = row[0] ? String(row[0]).trim() : '';
+      const secondCol = row[1] ? String(row[1]).trim() : '';
+      
+      // Track current business line
+      const businessLineKeywords = [
+        'CUSTOMER', 'MARKETING', 'FINANCE & PEOPLE', 'PRODUCT', 'REVENUE'
+      ];
+      
+      if (businessLineKeywords.some(keyword => firstCol.toUpperCase().includes(keyword))) {
+        currentBusinessLine = firstCol.toUpperCase();
+      }
+      
+      // Look for total rows
+      if (secondCol.toLowerCase() === 'total' && typeof row[3] === 'number') {
+        // Map the data to months (starting from March which is column 3)
+        const monthlyFollowers = {};
+        const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        
+        for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
+          const value = row[3 + monthIndex]; // Start from column D (index 3)
+          if (typeof value === 'number') {
+            const monthKey = `2025-${String(monthIndex + 3).padStart(2, '0')}`;
+            monthlyFollowers[monthKey] = {
+              followers: value,
+              month: months[monthIndex],
+              year: 2025,
+              displayName: `${months[monthIndex].charAt(0).toUpperCase() + months[monthIndex].slice(1)} 2025`
+            };
+          }
+        }
+        
+        // Only add if we have a business line name and it's not a duplicate
+        if (currentBusinessLine && !totalRows.find(tr => tr.businessLine === currentBusinessLine)) {
+          totalRows.push({
+            businessLine: currentBusinessLine,
+            monthlyFollowers: monthlyFollowers
+          });
         }
       }
+    }
+
+    // Convert to business line objects with metrics
+    return totalRows.map(tr => {
+      const metrics = computeOverallMetrics(tr.monthlyFollowers);
+      const monthlyMetrics = computeMonthlyMetrics(tr.monthlyFollowers);
       
-      // Only add if we have a business line name and it's not a duplicate
-      if (currentBusinessLine && !totalRows.find(tr => tr.businessLine === currentBusinessLine)) {
-        totalRows.push({
-          businessLine: currentBusinessLine,
-          monthlyFollowers: monthlyFollowers
-        });
+      // Add latest monthly metrics to overall metrics
+      if (monthlyMetrics.length > 0) {
+        const latest = monthlyMetrics[monthlyMetrics.length - 1];
+        metrics.monthlyGrowth = latest.monthlyGrowth;
+        metrics.monthlyGrowthRate = latest.monthlyGrowthRate;
       }
-    }
+
+      return {
+        name: tr.businessLine,
+        monthlyFollowers: tr.monthlyFollowers,
+        metrics: metrics,
+        monthlyMetrics: monthlyMetrics,
+        employeeCount: 0 // Will be calculated later
+      };
+    });
+  } catch (error) {
+    console.error('Error parsing business line data:', error);
+    return [];
   }
-
-  // Convert to business line objects with metrics
-  return totalRows.map(tr => {
-    const metrics = computeOverallMetrics(tr.monthlyFollowers);
-    const monthlyMetrics = computeMonthlyMetrics(tr.monthlyFollowers);
-    
-    // Add latest monthly metrics to overall metrics
-    if (monthlyMetrics.length > 0) {
-      const latest = monthlyMetrics[monthlyMetrics.length - 1];
-      metrics.monthlyGrowth = latest.monthlyGrowth;
-      metrics.monthlyGrowthRate = latest.monthlyGrowthRate;
-    }
-
-    return {
-      name: tr.businessLine,
-      monthlyFollowers: tr.monthlyFollowers,
-      metrics: metrics,
-      monthlyMetrics: monthlyMetrics,
-      employeeCount: 0 // Will be calculated later
-    };
-  });
 }
 
 function calculateBusinessLineEmployeeCounts(businessLines, employees) {
-  businessLines.forEach(bl => {
-    bl.employeeCount = employees.filter(emp => 
-      emp.businessLine.toUpperCase().includes(bl.name) || 
-      bl.name.includes(emp.businessLine.toUpperCase())
-    ).length;
-  });
+  try {
+    businessLines.forEach(bl => {
+      bl.employeeCount = employees.filter(emp => {
+        const empBizLine = emp.businessLine.toUpperCase();
+        const blName = bl.name.toUpperCase();
+        return empBizLine.includes(blName) || blName.includes(empBizLine);
+      }).length;
+    });
+  } catch (error) {
+    console.error('Error calculating business line employee counts:', error);
+  }
 }
 
 function calculateBusinessLineWinners(businessLines) {
-  const monthlyWinners = [];
-  const allMonths = new Set();
+  try {
+    const monthlyWinners = [];
+    const allMonths = new Set();
 
-  // Collect all months that have data
-  businessLines.forEach(bl => {
-    if (bl.monthlyMetrics) {
-      bl.monthlyMetrics.forEach(metric => {
-        allMonths.add(metric.monthKey);
-      });
-    }
-  });
+    // Collect all months that have data
+    businessLines.forEach(bl => {
+      if (bl.monthlyMetrics) {
+        bl.monthlyMetrics.forEach(metric => {
+          allMonths.add(metric.monthKey);
+        });
+      }
+    });
 
-  const sortedMonths = Array.from(allMonths).sort().reverse();
+    const sortedMonths = Array.from(allMonths).sort().reverse();
 
-  sortedMonths.forEach(monthKey => {
-    const monthBusinessLines = businessLines
-      .map(bl => {
-        if (!bl.monthlyMetrics) return null;
-        const monthMetric = bl.monthlyMetrics.find(m => m.monthKey === monthKey);
-        if (!monthMetric || monthMetric.monthlyGrowthRate <= 0) return null;
-        return {
-          ...bl,
-          monthMetric: monthMetric
-        };
-      })
-      .filter(bl => bl !== null)
-      .sort((a, b) => b.monthMetric.monthlyGrowthRate - a.monthMetric.monthlyGrowthRate); // Sort by growth rate for business lines
+    sortedMonths.forEach(monthKey => {
+      const monthBusinessLines = businessLines
+        .map(bl => {
+          if (!bl.monthlyMetrics) return null;
+          const monthMetric = bl.monthlyMetrics.find(m => m.monthKey === monthKey);
+          if (!monthMetric || monthMetric.monthlyGrowthRate <= 0) return null;
+          return {
+            ...bl,
+            monthMetric: monthMetric
+          };
+        })
+        .filter(bl => bl !== null)
+        .sort((a, b) => b.monthMetric.monthlyGrowthRate - a.monthMetric.monthlyGrowthRate); // Sort by growth rate for business lines
 
-    if (monthBusinessLines.length > 0) {
-      const winner = monthBusinessLines[0];
-      monthlyWinners.push({
-        month: winner.monthMetric.month,
-        monthKey: monthKey,
-        winner: {
-          name: winner.name,
-          employeeCount: winner.employeeCount,
-          currentFollowers: winner.monthMetric.currentFollowers,
-          monthlyGrowth: winner.monthMetric.monthlyGrowth,
-          monthlyGrowthRate: winner.monthMetric.monthlyGrowthRate
-        }
-      });
-    }
-  });
+      if (monthBusinessLines.length > 0) {
+        const winner = monthBusinessLines[0];
+        monthlyWinners.push({
+          month: winner.monthMetric.month,
+          monthKey: monthKey,
+          winner: {
+            name: winner.name,
+            employeeCount: winner.employeeCount,
+            currentFollowers: winner.monthMetric.currentFollowers,
+            monthlyGrowth: winner.monthMetric.monthlyGrowth,
+            monthlyGrowthRate: winner.monthMetric.monthlyGrowthRate
+          }
+        });
+      }
+    });
 
-  return monthlyWinners;
+    return monthlyWinners;
+  } catch (error) {
+    console.error('Error calculating business line winners:', error);
+    return [];
+  }
 }
 
 // --------------------------- Data Access ---------------------------
@@ -360,33 +361,21 @@ async function getEmployeesSheet() {
 }
 
 async function getBizLineSheet() {
-  const sheets = await getSheetsClient();
-  const range = 'Biz Line Following!A1:ZZ2000';
-  const resp = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range,
-    valueRenderOption: 'UNFORMATTED_VALUE',
-    dateTimeRenderOption: 'FORMATTED_STRING'
-  });
-
-  const values = resp?.data?.values || [];
-  if (!values.length) return null;
-
-  // Convert to sheet-like structure for processing
-  const sheetData = {};
-  const maxRow = values.length;
-  const maxCol = Math.max(...values.map(row => row.length));
-  
-  sheetData['!ref'] = `A1:${String.fromCharCode(65 + maxCol - 1)}${maxRow}`;
-  
-  values.forEach((row, rowIndex) => {
-    row.forEach((cell, colIndex) => {
-      const cellAddr = String.fromCharCode(65 + colIndex) + (rowIndex + 1);
-      sheetData[cellAddr] = { v: cell };
+  try {
+    const sheets = await getSheetsClient();
+    const range = 'Biz Line Following!A1:ZZ2000';
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range,
+      valueRenderOption: 'UNFORMATTED_VALUE',
+      dateTimeRenderOption: 'FORMATTED_STRING'
     });
-  });
 
-  return sheetData;
+    return resp?.data?.values || [];
+  } catch (error) {
+    console.error('Error fetching business line sheet:', error);
+    return null;
+  }
 }
 
 // --------------------------- Transformation ---------------------------
@@ -431,9 +420,9 @@ function rowsToObjects(headers, rows) {
   });
 }
 
-function buildEmployeesPayload(employeeSheet, bizLineSheet) {
+function buildEmployeesPayload(employeeSheet, bizLineValues) {
   const { headers, rows } = employeeSheet;
-  if (!headers.length) return { employees: [], businessLines: [], monthlyWinners: [], summary: baseSummary() };
+  if (!headers.length) return { employees: [], businessLines: [], monthlyWinners: { employees: [], businessLines: [] }, summary: baseSummary() };
 
   const monthCols = detectMonthColumns(headers);
   const objects = rowsToObjects(headers, rows);
@@ -458,8 +447,8 @@ function buildEmployeesPayload(employeeSheet, bizLineSheet) {
 
   // Process business lines
   let businessLines = [];
-  if (bizLineSheet) {
-    businessLines = parseBizLineData(bizLineSheet);
+  if (bizLineValues) {
+    businessLines = parseBizLineData(bizLineValues);
     calculateBusinessLineEmployeeCounts(businessLines, employees);
   }
 
@@ -518,17 +507,17 @@ module.exports = async function handler(req, res) {
     const employeeSheet = await getEmployeesSheet();
     console.log('Employee sheet fetched successfully');
     
-    let bizLineSheet = null;
+    let bizLineValues = null;
     try {
       console.log('Fetching business line data...');
-      bizLineSheet = await getBizLineSheet();
-      console.log('Business line sheet fetched:', bizLineSheet ? 'success' : 'failed');
+      bizLineValues = await getBizLineSheet();
+      console.log('Business line sheet fetched:', bizLineValues ? 'success' : 'failed');
     } catch (bizError) {
       console.warn('Business line sheet fetch failed:', bizError.message);
     }
     
     console.log('Building payload...');
-    const payload = buildEmployeesPayload(employeeSheet, bizLineSheet);
+    const payload = buildEmployeesPayload(employeeSheet, bizLineValues);
     console.log('Payload built successfully');
     console.log(`Found ${payload.employees.length} employees and ${payload.businessLines.length} business lines`);
     
