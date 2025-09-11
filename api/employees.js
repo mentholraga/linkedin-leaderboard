@@ -497,34 +497,35 @@ function computeSummary(employees) {
 
 // --------------------------- API Handler ---------------------------
 
+// This version supports both old and new features
 module.exports = async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    console.log('Fetching employee data...');
     const employeeSheet = await getEmployeesSheet();
-    console.log('Employee sheet fetched successfully');
     
+    // Try to get business line data, but don't fail if it doesn't work
     let bizLineValues = null;
     try {
-      console.log('Fetching business line data...');
       bizLineValues = await getBizLineSheet();
-      console.log('Business line sheet fetched:', bizLineValues ? 'success' : 'failed');
-    } catch (bizError) {
-      console.warn('Business line sheet fetch failed:', bizError.message);
+    } catch (err) {
+      console.warn('Business line sheet not available:', err.message);
     }
     
-    console.log('Building payload...');
     const payload = buildEmployeesPayload(employeeSheet, bizLineValues);
-    console.log('Payload built successfully');
-    console.log(`Found ${payload.employees.length} employees and ${payload.businessLines.length} business lines`);
     
-    return res.status(200).json(payload);
+    // Return data in format that works with both old and new frontend
+    return res.status(200).json({
+      employees: payload.employees,
+      businessLines: payload.businessLines || [],
+      monthlyWinners: payload.monthlyWinners?.employees || payload.monthlyWinners || [],
+      monthlyWinnersNew: payload.monthlyWinners, // New structure for future use
+      summary: payload.summary
+    });
   } catch (error) {
     console.error('[employees API] Error:', error);
-    console.error('Stack trace:', error.stack);
     return res.status(500).json({
       error: 'Failed to fetch employee data',
       code: error?.code || 'INTERNAL_ERROR',
