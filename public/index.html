@@ -750,22 +750,38 @@
           monthlyGrowthRate: latest.monthlyGrowthRate || 0
         };
       } else {
-        // Return specific month metric
+        // Return specific month metric with calculated growth
         if (employee.monthlyFollowers && employee.monthlyFollowers[chartMonth]) {
           const monthData = employee.monthlyFollowers[chartMonth];
-          console.log(`Found specific month data for ${chartMonth}:`, monthData);
+          const currentFollowers = monthData.followers || 0;
           
-          // Calculate growth if it exists in the data, otherwise use the raw follower count for now
-          const growth = monthData.growth || 0; // This appears to be 0 or missing
-          const growthRate = monthData.growthRate || 0; // This appears to be 0 or missing
-          const followers = monthData.followers || 0;
+          // Calculate growth by comparing to previous month
+          let monthlyGrowth = 0;
+          let monthlyGrowthRate = 0;
           
-          console.log(`Calculated metrics - followers: ${followers}, growth: ${growth}, growthRate: ${growthRate}`);
+          // Get all available months and sort them
+          const allMonths = Object.keys(employee.monthlyFollowers).sort();
+          const currentMonthIndex = allMonths.indexOf(chartMonth);
+          
+          if (currentMonthIndex > 0) {
+            // Get previous month data
+            const previousMonth = allMonths[currentMonthIndex - 1];
+            const previousData = employee.monthlyFollowers[previousMonth];
+            const previousFollowers = previousData?.followers || 0;
+            
+            // Calculate actual growth
+            monthlyGrowth = currentFollowers - previousFollowers;
+            monthlyGrowthRate = previousFollowers > 0 ? ((monthlyGrowth / previousFollowers) * 100) : 0;
+            
+            console.log(`Calculated growth for ${chartMonth}: ${currentFollowers} - ${previousFollowers} = ${monthlyGrowth} (${monthlyGrowthRate.toFixed(1)}%)`);
+          } else {
+            console.log(`${chartMonth} is first month, no previous data for growth calculation`);
+          }
           
           return {
-            currentFollowers: followers,
-            monthlyGrowth: growth,
-            monthlyGrowthRate: growthRate
+            currentFollowers,
+            monthlyGrowth,
+            monthlyGrowthRate
           };
         } else {
           console.log(`No data found for month ${chartMonth}`);
