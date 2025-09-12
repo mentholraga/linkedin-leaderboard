@@ -1133,6 +1133,8 @@
       });
 
       if (chartMonthSelect) chartMonthSelect.addEventListener('change', () => {
+        console.log('Chart month changed - updating both chart and leaderboard');
+        renderBoard(); // Now updates the leaderboard too!
         renderChart();
       });
       
