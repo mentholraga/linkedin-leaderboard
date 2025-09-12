@@ -754,10 +754,18 @@
         if (employee.monthlyFollowers && employee.monthlyFollowers[chartMonth]) {
           const monthData = employee.monthlyFollowers[chartMonth];
           console.log(`Found specific month data for ${chartMonth}:`, monthData);
+          
+          // Calculate growth if it exists in the data, otherwise use the raw follower count for now
+          const growth = monthData.growth || 0; // This appears to be 0 or missing
+          const growthRate = monthData.growthRate || 0; // This appears to be 0 or missing
+          const followers = monthData.followers || 0;
+          
+          console.log(`Calculated metrics - followers: ${followers}, growth: ${growth}, growthRate: ${growthRate}`);
+          
           return {
-            currentFollowers: monthData.followers || 0,
-            monthlyGrowth: monthData.growth || 0,
-            monthlyGrowthRate: monthData.growthRate || 0
+            currentFollowers: followers,
+            monthlyGrowth: growth,
+            monthlyGrowthRate: growthRate
           };
         } else {
           console.log(`No data found for month ${chartMonth}`);
