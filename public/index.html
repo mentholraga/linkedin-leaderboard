@@ -1133,9 +1133,17 @@
       });
 
       if (chartMonthSelect) chartMonthSelect.addEventListener('change', () => {
-        console.log('Chart month changed - updating both chart and leaderboard');
+        const selectedMonth = chartMonthSelect.value;
+        console.log('=== CHART MONTH CHANGED ===');
+        console.log('New selected month:', selectedMonth);
+        console.log('Chart month select element:', chartMonthSelect);
+        console.log('Available options:', Array.from(chartMonthSelect.options).map(opt => opt.value));
+        
+        console.log('Calling renderBoard()...');
         renderBoard(); // Now updates the leaderboard too!
+        console.log('Calling renderChart()...');
         renderChart();
+        console.log('=== MONTH CHANGE COMPLETE ===');
       });
       
       if (refreshBtn) refreshBtn.addEventListener('click', fetchData);
