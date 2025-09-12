@@ -863,10 +863,17 @@
         rows = rows.filter(emp => getMonthlyMetric(emp) !== null);
       }
       
+      console.log(`=== SORTING EMPLOYEES FOR ${selectedMonth} ===`);
+      console.log('Employees before sorting:', rows.slice(0, 3).map(emp => ({
+        name: emp.firstName + ' ' + emp.lastName,
+        metric: getMonthlyMetric(emp)
+      })));
+      
       if (metric === 'monthlyGrowth') {
         rows = rows.sort((a, b) => {
           const aMetric = getMonthlyMetric(a);
           const bMetric = getMonthlyMetric(b);
+          console.log(`Comparing ${a.firstName} ${a.lastName} (${aMetric?.monthlyGrowth || 0}) vs ${b.firstName} ${b.lastName} (${bMetric?.monthlyGrowth || 0})`);
           return (bMetric?.monthlyGrowth || 0) - (aMetric?.monthlyGrowth || 0);
         });
       } else if (metric === 'monthlyGrowthRate') {
