@@ -727,23 +727,108 @@
       return [...list];
     }
 
-    function getLatestMonthlyMetric(employee) {
-      if (!employee.monthlyMetrics || employee.monthlyMetrics.length === 0) {
+    function getMonthlyMetric(employee, selectedMonth = null) {
+      const chartMonth = selectedMonth || document.getElementById('chartMonth')?.value || 'all';
+      
+      console.log(`Getting monthly metric for ${employee.firstName} ${employee.lastName}, selected month: ${chartMonth}`);
+      
+      if (chartMonth === 'all') {
+        // Return latest monthly metric
+        if (!employee.monthlyMetrics || employee.monthlyMetrics.length === 0) {
+          console.log('No monthly metrics, using fallback');
+          return {
+            currentFollowers: employee.metrics?.currentFollowers || 0,
+            monthlyGrowth: 0,
+            monthlyGrowthRate: 0
+          };
+        }
+        const latest = employee.monthlyMetrics[employee.monthlyMetrics.length - 1];
+        console.log('Using latest metric:', latest);
         return {
-          currentFollowers: employee.metrics?.currentFollowers || 0,
-          monthlyGrowth: 0,
-          monthlyGrowthRate: 0
+          currentFollowers: latest.currentFollowers || 0,
+          monthlyGrowth: latest.monthlyGrowth || 0,
+          monthlyGrowthRate: latest.monthlyGrowthRate || 0
         };
+      } else {
+        // Return specific month metric
+        if (employee.monthlyFollowers && employee.monthlyFollowers[chartMonth]) {
+          const monthData = employee.monthlyFollowers[chartMonth];
+          console.log(`Found specific month data for ${chartMonth}:`, monthData);
+          return {
+            currentFollowers: monthData.followers || 0,
+            monthlyGrowth: monthData.growth || 0,
+            monthlyGrowthRate: monthData.growthRate || 0
+          };
+        } else {
+          console.log(`No data found for month ${chartMonth}`);
+          return null; // No data for this month
+        }
       }
-      const latest = employee.monthlyMetrics[employee.monthlyMetrics.length - 1];
-      return {
-        currentFollowers: latest.currentFollowers || 0,
-        monthlyGrowth: latest.monthlyGrowth || 0,
-        monthlyGrowthRate: latest.monthlyGrowthRate || 0
-      };
+    }
+
+    function getBusinessLineMonthlyMetric(businessLine, selectedMonth = null) {
+      const chartMonth = selectedMonth || document.getElementById('chartMonth')?.value || 'all';
+      
+      if (chartMonth === 'all') {
+        return {
+          currentFollowers: businessLine.metrics?.currentFollowers || 0,
+          monthlyGrowth: businessLine.metrics?.monthlyGrowth || 0,
+          monthlyGrowthRate: businessLine.metrics?.monthlyGrowthRate || 0
+        };
+      } else {
+        if (businessLine.monthlyFollowers && businessLine.monthlyFollowers[chartMonth]) {
+          const monthData = businessLine.monthlyFollowers[chartMonth];
+          return {
+            currentFollowers: monthData.followers || 0,
+            monthlyGrowth: monthData.growth || 0,
+            monthlyGrowthRate: monthData.growthRate || 0
+          };
+        } else {
+          return null; // No data for this month
+        }
+      }
     }
 
     function renderBoard() {
+      try {
+        console.log('=== RENDER BOARD STARTED ===');
+        
+        if (currentView === 'employee') {
+          renderEmployeeBoard();
+        } else {
+          renderBusinessLineBoard();
+        }
+        
+        console.log('renderBoard() completed successfully');
+        
+        // Debug: Show what data we're actually working with
+        console.log('=== DATA DEBUG ===');
+        console.log('Selected chart month:', document.getElementById('chartMonth').value);
+        console.log('Current view mode:', currentView);
+        
+        if (currentView === 'employee') {
+          const filteredEmployees = getFilteredEmployees().slice(0, 3); // Just first 3 for debugging
+          console.log('First 3 filtered employees:', filteredEmployees.map(emp => ({
+            name: emp.firstName + ' ' + emp.lastName,
+            monthlyMetric: getMonthlyMetric(emp),
+            availableMonths: emp.monthlyFollowers ? Object.keys(emp.monthlyFollowers) : []
+          })));
+        } else {
+          console.log('Business line data (first 3):', BUSINESS_LINES.slice(0, 3).map(bl => ({
+            name: bl.name,
+            monthlyMetric: getBusinessLineMonthlyMetric(bl),
+            availableMonths: bl.monthlyFollowers ? Object.keys(bl.monthlyFollowers) : []
+          })));
+        }
+        console.log('=== END DATA DEBUG ===');
+        console.log('');
+        
+      } catch (error) {
+        console.error('Error in renderBoard():', error);
+      }
+    }
+
+    function renderEmployeeBoard() {
       const metric = document.getElementById('metric')?.value || 'monthlyGrowth';
       const board = document.getElementById('board');
       const metricHeader = document.getElementById('metricHeader');
@@ -759,20 +844,12 @@
       
       if (metricHeader) metricHeader.textContent = headerMap[metric];
 
-      if (currentView === 'employee') {
-        renderEmployeeBoard(metric, board);
-      } else {
-        renderBusinessLineBoard(metric, board);
-      }
-    }
-
-    function renderEmployeeBoard(metric, board) {
       const container = document.getElementById('leaderboardContainer');
       if (container) {
         container.querySelector('.leaderboard-header').innerHTML = `
           <div>Rank</div>
           <div>Employee</div>
-          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
+          <div id="metricHeader">${headerMap[metric]}</div>
           <div>Follower Count</div>
           <div>Absolute Growth</div>
         `;
@@ -780,36 +857,46 @@
 
       let rows = getFilteredEmployees();
       
+      // Filter out employees with no data for the selected month
+      const selectedMonth = document.getElementById('chartMonth')?.value || 'all';
+      if (selectedMonth !== 'all') {
+        rows = rows.filter(emp => getMonthlyMetric(emp) !== null);
+      }
+      
       if (metric === 'monthlyGrowth') {
         rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.monthlyGrowth - aMetric.monthlyGrowth;
+          const aMetric = getMonthlyMetric(a);
+          const bMetric = getMonthlyMetric(b);
+          return (bMetric?.monthlyGrowth || 0) - (aMetric?.monthlyGrowth || 0);
         });
       } else if (metric === 'monthlyGrowthRate') {
         rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.monthlyGrowthRate - aMetric.monthlyGrowthRate;
+          const aMetric = getMonthlyMetric(a);
+          const bMetric = getMonthlyMetric(b);
+          return (bMetric?.monthlyGrowthRate || 0) - (aMetric?.monthlyGrowthRate || 0);
         });
       } else if (metric === 'currentFollowers') {
         rows = rows.sort((a, b) => {
-          const aMetric = getLatestMonthlyMetric(a);
-          const bMetric = getLatestMonthlyMetric(b);
-          return bMetric.currentFollowers - aMetric.currentFollowers;
+          const aMetric = getMonthlyMetric(a);
+          const bMetric = getMonthlyMetric(b);
+          return (bMetric?.currentFollowers || 0) - (aMetric?.currentFollowers || 0);
         });
       } else if (metric === 'overallGrowthRate') {
         rows = rows.sort((a, b) => (b.metrics?.growthRate ?? 0) - (a.metrics?.growthRate ?? 0));
       }
 
       if (!rows.length) {
-        board.innerHTML = '<div class="no-data">No employee data available.</div>';
+        board.innerHTML = '<div class="no-data">No employee data available for the selected month.</div>';
         return;
       }
 
       const html = rows.map((e, i) => {
         const rankClass = i < 3 ? ` rank-${i + 1}` : '';
-        const monthlyMetric = getLatestMonthlyMetric(e);
+        const monthlyMetric = getMonthlyMetric(e);
+        
+        if (!monthlyMetric) {
+          return ''; // Skip employees with no data for this month
+        }
         
         let val, display;
         if (metric === 'monthlyGrowth') {
@@ -849,19 +936,34 @@
             <div class="metric ${absoluteGrowthCls}">${absoluteGrowthStr}</div>
           </div>
         `;
-      }).join('');
+      }).filter(html => html !== '').join('');
 
-      board.innerHTML = html;
+      board.innerHTML = html || '<div class="no-data">No employee data available for the selected month.</div>';
     }
 
-    function renderBusinessLineBoard(metric, board) {
+    function renderBusinessLineBoard() {
+      const metric = document.getElementById('metric')?.value || 'monthlyGrowth';
+      const board = document.getElementById('board');
+      const metricHeader = document.getElementById('metricHeader');
+      
+      if (!board) return;
+
+      const headerMap = {
+        monthlyGrowth: 'Monthly Growth',
+        monthlyGrowthRate: 'Growth %',
+        currentFollowers: 'Followers',
+        overallGrowthRate: 'Overall Growth %'
+      };
+      
+      if (metricHeader) metricHeader.textContent = headerMap[metric];
+
       const container = document.getElementById('leaderboardContainer');
       if (container) {
         container.querySelector('.leaderboard-header').innerHTML = `
           <div>Rank</div>
           <div>Business Line</div>
           <div>Employees</div>
-          <div id="metricHeader">${document.getElementById('metricHeader').textContent}</div>
+          <div id="metricHeader">${headerMap[metric]}</div>
           <div>Total Followers</div>
           <div>Avg per Employee</div>
         `;
@@ -869,43 +971,70 @@
 
       let rows = [...BUSINESS_LINES];
       
+      // Filter out business lines with no data for the selected month
+      const selectedMonth = document.getElementById('chartMonth')?.value || 'all';
+      if (selectedMonth !== 'all') {
+        rows = rows.filter(bl => getBusinessLineMonthlyMetric(bl) !== null);
+      }
+      
       if (metric === 'monthlyGrowth') {
-        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowth || 0) - (a.metrics?.monthlyGrowth || 0));
+        rows = rows.sort((a, b) => {
+          const aMetric = getBusinessLineMonthlyMetric(a);
+          const bMetric = getBusinessLineMonthlyMetric(b);
+          return (bMetric?.monthlyGrowth || 0) - (aMetric?.monthlyGrowth || 0);
+        });
       } else if (metric === 'monthlyGrowthRate') {
-        rows = rows.sort((a, b) => (b.metrics?.monthlyGrowthRate || 0) - (a.metrics?.monthlyGrowthRate || 0));
+        rows = rows.sort((a, b) => {
+          const aMetric = getBusinessLineMonthlyMetric(a);
+          const bMetric = getBusinessLineMonthlyMetric(b);
+          return (bMetric?.monthlyGrowthRate || 0) - (aMetric?.monthlyGrowthRate || 0);
+        });
       } else if (metric === 'currentFollowers') {
-        rows = rows.sort((a, b) => (b.metrics?.currentFollowers || 0) - (a.metrics?.currentFollowers || 0));
+        rows = rows.sort((a, b) => {
+          const aMetric = getBusinessLineMonthlyMetric(a);
+          const bMetric = getBusinessLineMonthlyMetric(b);
+          return (bMetric?.currentFollowers || 0) - (aMetric?.currentFollowers || 0);
+        });
       } else if (metric === 'overallGrowthRate') {
-        rows = rows.sort((a, b) => (b.metrics?.growthRate || 0) - (a.metrics?.growthRate || 0));
+        rows = rows.sort((a, b) => {
+          const aMetric = getBusinessLineMonthlyMetric(a);
+          const bMetric = getBusinessLineMonthlyMetric(b);
+          return (bMetric?.monthlyGrowthRate || 0) - (aMetric?.monthlyGrowthRate || 0);
+        });
       }
 
       if (!rows.length) {
-        board.innerHTML = '<div class="no-data">No business line data available.</div>';
+        board.innerHTML = '<div class="no-data">No business line data available for the selected month.</div>';
         return;
       }
 
       const html = rows.map((bl, i) => {
         const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        const monthlyMetric = getBusinessLineMonthlyMetric(bl);
+        
+        if (!monthlyMetric) {
+          return ''; // Skip business lines with no data for this month
+        }
         
         let val, display;
         if (metric === 'monthlyGrowth') {
-          val = bl.metrics?.monthlyGrowth || 0;
+          val = monthlyMetric.monthlyGrowth;
           display = fmtInt(val);
         } else if (metric === 'monthlyGrowthRate') {
-          val = bl.metrics?.monthlyGrowthRate || 0;
+          val = monthlyMetric.monthlyGrowthRate;
           display = fmtPct(val);
         } else if (metric === 'currentFollowers') {
-          val = bl.metrics?.currentFollowers || 0;
+          val = monthlyMetric.currentFollowers;
           display = fmtInt(val);
         } else if (metric === 'overallGrowthRate') {
-          val = bl.metrics?.growthRate || 0;
+          val = monthlyMetric.monthlyGrowthRate;
           display = fmtPct(val);
         }
         
         const valCls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'neu');
-        const totalFollowers = fmtInt(bl.metrics?.currentFollowers || 0);
+        const totalFollowers = fmtInt(monthlyMetric.currentFollowers);
         const avgPerEmployee = bl.employeeCount > 0 ? 
-          fmtInt(Math.round((bl.metrics?.currentFollowers || 0) / bl.employeeCount)) : '0';
+          fmtInt(Math.round(monthlyMetric.currentFollowers / bl.employeeCount)) : '0';
 
         return `
           <div class="row${rankClass}">
@@ -920,9 +1049,9 @@
             <div class="metric">${avgPerEmployee}</div>
           </div>
         `;
-      }).join('');
+      }).filter(html => html !== '').join('');
 
-      board.innerHTML = html;
+      board.innerHTML = html || '<div class="no-data">No business line data available for the selected month.</div>';
     }
 
     function renderChart() {
@@ -1141,7 +1270,7 @@
         
         try {
           console.log('Calling renderBoard()...');
-          renderBoard(); // Now updates the leaderboard too!
+          renderBoard(); // Now updates the leaderboard based on selected month!
           console.log('renderBoard() completed successfully');
           
           console.log('Calling renderChart()...');
