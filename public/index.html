@@ -1139,10 +1139,19 @@
         console.log('Chart month select element:', chartMonthSelect);
         console.log('Available options:', Array.from(chartMonthSelect.options).map(opt => opt.value));
         
-        console.log('Calling renderBoard()...');
-        renderBoard(); // Now updates the leaderboard too!
-        console.log('Calling renderChart()...');
-        renderChart();
+        try {
+          console.log('Calling renderBoard()...');
+          renderBoard(); // Now updates the leaderboard too!
+          console.log('renderBoard() completed successfully');
+          
+          console.log('Calling renderChart()...');
+          renderChart();
+          console.log('renderChart() completed successfully');
+        } catch (error) {
+          console.error('Error during month change:', error);
+          console.error('Error stack:', error.stack);
+        }
+        
         console.log('=== MONTH CHANGE COMPLETE ===');
       });
       
