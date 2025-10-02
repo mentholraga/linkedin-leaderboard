@@ -627,28 +627,89 @@
       const statTopGrower = document.getElementById('statTopGrower');
       const statTopGrowerLabel = document.getElementById('statTopGrowerLabel');
       const statTotalFollowers = document.getElementById('statTotalFollowers');
+      
+      const selectedMonth = document.getElementById('chartMonth')?.value || 'all';
 
       if (currentView === 'employee') {
         if (statTotal) statTotal.textContent = fmtInt(EMPLOYEES.length);
         if (statTotalLabel) statTotalLabel.textContent = 'Active Employees';
-        if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
-        if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
-        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
+        
+        // Calculate average growth rate based on selected month
+        if (selectedMonth === 'all') {
+          if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(SUMMARY.avgGrowthRate || 0);
+          if (statTopGrower) statTopGrower.textContent = safeStr(SUMMARY.topGrower || '—');
+          if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Grower';
+        } else {
+          // Calculate stats for selected month
+          const employeesWithData = EMPLOYEES
+            .map(emp => ({
+              employee: emp,
+              metric: getMonthlyMetric(emp, selectedMonth)
+            }))
+            .filter(item => item.metric !== null);
+          
+          if (employeesWithData.length > 0) {
+            // Average growth rate for the month
+            const avgMonthlyGrowthRate = employeesWithData.reduce((acc, item) => acc + item.metric.monthlyGrowthRate, 0) / employeesWithData.length;
+            if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(avgMonthlyGrowthRate);
+            
+            // Top grower for the month
+            const topMonthlyGrower = employeesWithData.reduce((best, item) => 
+              item.metric.monthlyGrowth > (best?.metric.monthlyGrowth || -Infinity) ? item : best, null);
+            
+            if (statTopGrower && topMonthlyGrower) {
+              const monthData = EMPLOYEES.find(e => e.monthlyFollowers?.[selectedMonth])?.monthlyFollowers[selectedMonth];
+              const monthName = monthData?.displayName || selectedMonth;
+              statTopGrower.textContent = `${topMonthlyGrower.employee.firstName} ${topMonthlyGrower.employee.lastName}`;
+              if (statTopGrowerLabel) statTopGrowerLabel.textContent = `${monthName} Winner`;
+            }
+          }
+        }
+        
         if (statTotalFollowers) statTotalFollowers.textContent = fmtInt(SUMMARY.totalFollowers || 0);
       } else {
         if (statTotal) statTotal.textContent = fmtInt(BUSINESS_LINES.length);
         if (statTotalLabel) statTotalLabel.textContent = 'Business Lines';
-        if (statAvgGrowth) {
-          const avgBizGrowth = BUSINESS_LINES.length > 0 ? 
-            BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.growthRate || 0), 0) / BUSINESS_LINES.length : 0;
-          statAvgGrowth.textContent = fmtPct(avgBizGrowth);
+        
+        if (selectedMonth === 'all') {
+          if (statAvgGrowth) {
+            const avgBizGrowth = BUSINESS_LINES.length > 0 ? 
+              BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.growthRate || 0), 0) / BUSINESS_LINES.length : 0;
+            statAvgGrowth.textContent = fmtPct(avgBizGrowth);
+          }
+          if (statTopGrower) {
+            const topBizLine = BUSINESS_LINES.reduce((best, bl) => 
+              (bl.metrics?.growthRate || 0) > (best?.metrics?.growthRate || -Infinity) ? bl : best, null);
+            statTopGrower.textContent = topBizLine ? topBizLine.name : '—';
+          }
+          if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Business Line';
+        } else {
+          // Calculate stats for selected month - business lines
+          const bizLinesWithData = BUSINESS_LINES
+            .map(bl => ({
+              businessLine: bl,
+              metric: getBusinessLineMonthlyMetric(bl, selectedMonth)
+            }))
+            .filter(item => item.metric !== null);
+          
+          if (bizLinesWithData.length > 0) {
+            // Average growth rate for the month
+            const avgMonthlyGrowthRate = bizLinesWithData.reduce((acc, item) => acc + item.metric.monthlyGrowthRate, 0) / bizLinesWithData.length;
+            if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(avgMonthlyGrowthRate);
+            
+            // Top business line for the month
+            const topMonthlyBizLine = bizLinesWithData.reduce((best, item) => 
+              item.metric.monthlyGrowthRate > (best?.metric.monthlyGrowthRate || -Infinity) ? item : best, null);
+            
+            if (statTopGrower && topMonthlyBizLine) {
+              const monthData = BUSINESS_LINES.find(bl => bl.monthlyFollowers?.[selectedMonth])?.monthlyFollowers[selectedMonth];
+              const monthName = monthData?.displayName || selectedMonth;
+              statTopGrower.textContent = topMonthlyBizLine.businessLine.name;
+              if (statTopGrowerLabel) statTopGrowerLabel.textContent = `${monthName} Winner`;
+            }
+          }
         }
-        if (statTopGrower) {
-          const topBizLine = BUSINESS_LINES.reduce((best, bl) => 
-            (bl.metrics?.growthRate || 0) > (best?.metrics?.growthRate || -Infinity) ? bl : best, null);
-          statTopGrower.textContent = topBizLine ? topBizLine.name : '—';
-        }
-        if (statTopGrowerLabel) statTopGrowerLabel.textContent = 'Top Business Line';
+        
         if (statTotalFollowers) {
           const totalBizFollowers = BUSINESS_LINES.reduce((acc, bl) => acc + (bl.metrics?.currentFollowers || 0), 0);
           statTotalFollowers.textContent = fmtInt(totalBizFollowers);
