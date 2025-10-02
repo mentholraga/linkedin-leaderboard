@@ -653,9 +653,9 @@
             const avgMonthlyGrowthRate = employeesWithData.reduce((acc, item) => acc + item.metric.monthlyGrowthRate, 0) / employeesWithData.length;
             if (statAvgGrowth) statAvgGrowth.textContent = fmtPct(avgMonthlyGrowthRate);
             
-            // Top grower for the month
+            // Top grower for the month (by growth rate %)
             const topMonthlyGrower = employeesWithData.reduce((best, item) => 
-              item.metric.monthlyGrowth > (best?.metric.monthlyGrowth || -Infinity) ? item : best, null);
+              item.metric.monthlyGrowthRate > (best?.metric.monthlyGrowthRate || -Infinity) ? item : best, null);
             
             if (statTopGrower && topMonthlyGrower) {
               const monthData = EMPLOYEES.find(e => e.monthlyFollowers?.[selectedMonth])?.monthlyFollowers[selectedMonth];
