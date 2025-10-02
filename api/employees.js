@@ -212,7 +212,7 @@ function parseBizLineData(rawValues) {
       
       // Track current business line
       const businessLineKeywords = [
-        'CUSTOMER', 'MARKETING', 'FINANCE & PEOPLE', 'PRODUCT', 'REVENUE'
+        'CUSTOMER', 'MARKETING', 'PEOPLE & FINANCE', 'PRODUCT', 'TECH', 'REVENUE'
       ];
       
       if (businessLineKeywords.some(keyword => firstCol.toUpperCase().includes(keyword))) {
