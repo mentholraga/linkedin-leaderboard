@@ -802,10 +802,31 @@
       } else {
         if (businessLine.monthlyFollowers && businessLine.monthlyFollowers[chartMonth]) {
           const monthData = businessLine.monthlyFollowers[chartMonth];
+          const currentFollowers = monthData.followers || 0;
+          
+          // Calculate growth by comparing to previous month
+          let monthlyGrowth = 0;
+          let monthlyGrowthRate = 0;
+          
+          // Get all available months and sort them
+          const allMonths = Object.keys(businessLine.monthlyFollowers).sort();
+          const currentMonthIndex = allMonths.indexOf(chartMonth);
+          
+          if (currentMonthIndex > 0) {
+            // Get previous month data
+            const previousMonth = allMonths[currentMonthIndex - 1];
+            const previousData = businessLine.monthlyFollowers[previousMonth];
+            const previousFollowers = previousData?.followers || 0;
+            
+            // Calculate actual growth
+            monthlyGrowth = currentFollowers - previousFollowers;
+            monthlyGrowthRate = previousFollowers > 0 ? ((monthlyGrowth / previousFollowers) * 100) : 0;
+          }
+          
           return {
-            currentFollowers: monthData.followers || 0,
-            monthlyGrowth: monthData.growth || 0,
-            monthlyGrowthRate: monthData.growthRate || 0
+            currentFollowers,
+            monthlyGrowth,
+            monthlyGrowthRate
           };
         } else {
           return null; // No data for this month
