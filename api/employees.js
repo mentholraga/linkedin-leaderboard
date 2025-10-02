@@ -220,38 +220,23 @@ function parseBizLineData(rawValues) {
       }
       
       // Look for total rows
-      if (secondCol.toLowerCase() === 'total' && typeof row[2] === 'number') {
-        // Map the data to months (starting from March which is column C, index 2)
-        const monthlyFollowers = {};
-        const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-
-        if (businessLineKeywords.some(keyword => firstCol.toUpperCase().includes(keyword))) {
-  currentBusinessLine = firstCol.toUpperCase();
-  console.log('Found business line:', currentBusinessLine);
-}
-
-// Look for total rows
-console.log('Row check:', {
-  secondCol: secondCol,
-  secondColLower: secondCol.toLowerCase(),
-  row2Type: typeof row[2],
-  row2Value: row[2],
-  currentBusinessLine: currentBusinessLine
-});
-
-if (secondCol.toLowerCase() === 'total' && typeof row[2] === 'number') {
-        for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
-          const value = row[2 + monthIndex]; // Start from column C (index 2)
-          if (typeof value === 'number') {
-            const monthKey = `2025-${String(monthIndex + 3).padStart(2, '0')}`;
-            monthlyFollowers[monthKey] = {
-              followers: value,
-              month: months[monthIndex],
-              year: 2025,
-              displayName: `${months[monthIndex].charAt(0).toUpperCase() + months[monthIndex].slice(1)} 2025`
-            };
-          }
-        }
+if (secondCol.toLowerCase() === 'total' && typeof row[3] === 'number') {
+  // Map the data to months (starting from March which is column D, index 3)
+  const monthlyFollowers = {};
+  const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  
+  for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
+    const value = row[3 + monthIndex]; // Start from column D (index 3)
+    if (typeof value === 'number') {
+      const monthKey = `2025-${String(monthIndex + 3).padStart(2, '0')}`;
+      monthlyFollowers[monthKey] = {
+        followers: value,
+        month: months[monthIndex],
+        year: 2025,
+        displayName: `${months[monthIndex].charAt(0).toUpperCase() + months[monthIndex].slice(1)} 2025`
+      };
+    }
+  }
         
         // Only add if we have a business line name and it's not a duplicate
         if (currentBusinessLine && !totalRows.find(tr => tr.businessLine === currentBusinessLine)) {
