@@ -220,13 +220,13 @@ function parseBizLineData(rawValues) {
       }
       
       // Look for total rows
-      if (secondCol.toLowerCase() === 'total' && typeof row[3] === 'number') {
-        // Map the data to months (starting from March which is column 3)
+      if (secondCol.toLowerCase() === 'total' && typeof row[2] === 'number') {
+        // Map the data to months (starting from March which is column C, index 2)
         const monthlyFollowers = {};
         const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
         
         for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
-          const value = row[3 + monthIndex]; // Start from column D (index 3)
+          const value = row[2 + monthIndex]; // Start from column C (index 2)
           if (typeof value === 'number') {
             const monthKey = `2025-${String(monthIndex + 3).padStart(2, '0')}`;
             monthlyFollowers[monthKey] = {
