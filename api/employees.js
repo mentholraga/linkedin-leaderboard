@@ -48,7 +48,7 @@ function parseHeaderToMonth(header, defaultYear = 2025) {
   if (!header) return null;
   const raw = String(header).trim().toLowerCase();
   
-  const monthIndex = MONTHS.findIndex(m => raw === m);
+  const monthIndex = MONTHS.findIndex(m => raw.includes(m));
   if (monthIndex >= 0) {
     return {
       month: MONTHS[monthIndex],
@@ -139,55 +139,64 @@ function computeMonthlyMetrics(monthlyFollowers) {
   return monthlyMetrics;
 }
 
-function parseBizLineData(rawValues) {
+// NEW: Simple parser for Business Line Growth sheet
+function parseBusinessLineGrowthSheet(rawValues) {
   const businessLines = [];
   
-  if (!rawValues || !rawValues.length) return businessLines;
+  if (!rawValues || rawValues.length < 2) return businessLines;
 
-  // Hardcode the exact row numbers where totals appear (subtract 1 for zero-based index)
-  const totalRowIndices = [17, 49, 70, 83, 98, 113]; // rows 18, 50, 71, 84, 99, 114
-  const businessLineNames = ['CUSTOMER', 'MARKETING', 'REVENUE', 'TECH', 'PEOPLE & FINANCE', 'PRODUCT'];
+  const headers = rawValues[0];
+  const dataRows = rawValues.slice(1);
 
-  totalRowIndices.forEach((rowIndex, idx) => {
-    if (rowIndex < rawValues.length) {
-      const row = rawValues[rowIndex];
-      const monthlyFollowers = {};
-      const months = ['march', 'april', 'may', 'june', 'july', 'august', 'september'];
-      
-      // Start from column D (index 3) and read 7 months
-      for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
-        const value = row[3 + monthIndex];
-        if (typeof value === 'number') {
-          const monthKey = `2025-${String(monthIndex + 3).padStart(2, '0')}`;
-          monthlyFollowers[monthKey] = {
-            followers: value,
-            month: months[monthIndex],
-            year: 2025,
-            displayName: `${months[monthIndex].charAt(0).toUpperCase() + months[monthIndex].slice(1)} 2025`
-          };
-        }
-      }
+  // Detect month columns (skip first column which is business line name)
+  const monthColumns = [];
+  for (let i = 1; i < headers.length; i++) {
+    const monthData = parseHeaderToMonth(headers[i]);
+    if (monthData) {
+      monthColumns.push({ index: i, monthData });
+    }
+  }
 
-      if (Object.keys(monthlyFollowers).length > 0) {
-        const metrics = computeOverallMetrics(monthlyFollowers);
-        const monthlyMetrics = computeMonthlyMetrics(monthlyFollowers);
-        
-        if (monthlyMetrics.length > 0) {
-          const latest = monthlyMetrics[monthlyMetrics.length - 1];
-          metrics.monthlyGrowth = latest.monthlyGrowth;
-          metrics.monthlyGrowthRate = latest.monthlyGrowthRate;
-        }
+  // Process each business line row
+  for (const row of dataRows) {
+    const businessLineName = row[0] ? String(row[0]).trim() : '';
+    if (!businessLineName) continue;
 
-        businessLines.push({
-          name: businessLineNames[idx],
-          monthlyFollowers: monthlyFollowers,
-          metrics: metrics,
-          monthlyMetrics: monthlyMetrics,
-          employeeCount: 0
-        });
+    const monthlyFollowers = {};
+    
+    // Read follower counts for each month
+    for (const { index, monthData } of monthColumns) {
+      const value = coerceNumber(row[index]);
+      if (value !== null) {
+        monthlyFollowers[monthData.sortKey] = {
+          followers: value,
+          month: monthData.month,
+          year: monthData.year,
+          displayName: monthData.month.charAt(0).toUpperCase() + monthData.month.slice(1) + ' ' + monthData.year
+        };
       }
     }
-  });
+
+    // Calculate metrics
+    if (Object.keys(monthlyFollowers).length > 0) {
+      const metrics = computeOverallMetrics(monthlyFollowers);
+      const monthlyMetrics = computeMonthlyMetrics(monthlyFollowers);
+      
+      if (monthlyMetrics.length > 0) {
+        const latest = monthlyMetrics[monthlyMetrics.length - 1];
+        metrics.monthlyGrowth = latest.monthlyGrowth;
+        metrics.monthlyGrowthRate = latest.monthlyGrowthRate;
+      }
+
+      businessLines.push({
+        name: businessLineName,
+        monthlyFollowers: monthlyFollowers,
+        metrics: metrics,
+        monthlyMetrics: monthlyMetrics,
+        employeeCount: 0
+      });
+    }
+  }
 
   return businessLines;
 }
@@ -219,10 +228,10 @@ async function getEmployeesSheet() {
   return { headers, rows };
 }
 
-async function getBizLineSheet() {
+async function getBusinessLineGrowthSheet() {
   try {
     const sheets = await getSheetsClient();
-    const range = 'Biz Line Following!A1:ZZ2000';
+    const range = 'Business Line Growth!A1:ZZ100';
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range,
@@ -232,7 +241,7 @@ async function getBizLineSheet() {
 
     return resp?.data?.values || [];
   } catch (error) {
-    console.error('Error fetching business line sheet:', error);
+    console.error('Error fetching business line growth sheet:', error);
     return null;
   }
 }
@@ -276,9 +285,19 @@ function rowsToObjects(headers, rows) {
   });
 }
 
-function buildEmployeesPayload(employeeSheet, bizLineValues) {
+function buildEmployeesPayload(employeeSheet, businessLineGrowthValues) {
   const { headers, rows } = employeeSheet;
-  if (!headers.length) return { employees: [], businessLines: [], summary: { lastUpdated: new Date().toISOString(), totalEmployees: 0, avgGrowthRate: 0, topGrower: null, totalFollowers: 0 } };
+  if (!headers.length) return { 
+    employees: [], 
+    businessLines: [], 
+    summary: { 
+      lastUpdated: new Date().toISOString(), 
+      totalEmployees: 0, 
+      avgGrowthRate: 0, 
+      topGrower: null, 
+      totalFollowers: 0 
+    } 
+  };
 
   const monthCols = detectMonthColumns(headers);
   const objects = rowsToObjects(headers, rows);
@@ -300,9 +319,10 @@ function buildEmployeesPayload(employeeSheet, bizLineValues) {
     employees.push(e);
   }
 
+  // Process business lines from new simple sheet
   let businessLines = [];
-  if (bizLineValues) {
-    businessLines = parseBizLineData(bizLineValues);
+  if (businessLineGrowthValues) {
+    businessLines = parseBusinessLineGrowthSheet(businessLineGrowthValues);
     calculateBusinessLineEmployeeCounts(businessLines, employees);
   }
 
@@ -335,14 +355,14 @@ module.exports = async function handler(req, res) {
   try {
     const employeeSheet = await getEmployeesSheet();
     
-    let bizLineValues = null;
+    let businessLineGrowthValues = null;
     try {
-      bizLineValues = await getBizLineSheet();
+      businessLineGrowthValues = await getBusinessLineGrowthSheet();
     } catch (err) {
-      console.warn('Business line sheet not available:', err.message);
+      console.warn('Business line growth sheet not available:', err.message);
     }
     
-    const payload = buildEmployeesPayload(employeeSheet, bizLineValues);
+    const payload = buildEmployeesPayload(employeeSheet, businessLineGrowthValues);
     
     return res.status(200).json({
       employees: payload.employees,
